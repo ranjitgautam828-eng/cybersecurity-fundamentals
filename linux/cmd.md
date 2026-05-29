@@ -127,7 +127,10 @@ help (Shell built-ins only)
 
 ---
 
-## globbing
+## 📁 Globbing
+
+**Description**:
+
 
 ---
 
