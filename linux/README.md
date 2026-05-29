@@ -17,9 +17,12 @@ Hello — as this repo is my study database and search hub, this file covers Lin
       - Some complex ideas come first alphabetically (like `📁 Absolute Path` before basic commands).
  
   **Solution:** 
+    
     - Each concept is **self-contained**
+    
     - Cross-references point to related sections
-    - Just keep reading — it will make sense later
+    
+    -Just keep reading — it will make sense later
    
  5. 🧩 Concepts Included, Not Just Commands
    - Description (If needed)
