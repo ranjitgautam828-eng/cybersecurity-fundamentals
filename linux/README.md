@@ -4,9 +4,21 @@ Hello — as this repo is my study database and search hub, this file covers Lin
 
 ---
 
-## Linux Basics (Before You Start)
+## How to Use This File
 
-The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search. Or you can just jump in if you already know what you're looking for. As its in alphabetic order, some more advance concept may come first or you may not understand something, just use the file i will mention it in their own section.
+1. The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search. Or you can just      jump in if you already know what you're looking for. As its in alphabetic order, some more advance concept may come         first or you may not understand something, just use the file i will mention it in their own section.
+   
+2. Each entry includes:
+   - Description (If needed)
+   - Basic command use 
+   - Common mistakes I've made
+   - Sometimes advanced arguments/options
+
+3. Concepts (not just commands) are included — like how a command works under the hood.
+
+---
+
+## Linux Terminal Basics (Before You Start)
 
 ### How Linux Commands Work
 
@@ -14,6 +26,33 @@ You'll be using a terminal (Kali Linux or any other distribution — same rules 
 
 **First thing:** Linux is **case sensitive**  
 - `cp` and `CP` are different. So is `Hello` vs `hello`.
+
+### Understanding the Terminal Prompt
+
+Before running commands, know what you're looking at:
+
+bro@kali:~$ echo "Hello"
+
+
+| Part | Meaning |
+|------|---------|
+| `bro` | Username (you) |
+| `kali` | Hostname (machine name) |
+| `~` | Current working directory (`~` means home folder) |
+| `$` | Regular user (not root) |
+| `#` | Root user (if you see this instead of `$`) |
+
+**Quick reference:**
+- `~` = home directory (`/home/bro`)
+- `/` = root directory (if you're root user)
+- `$` = normal user
+- `#` = root user
+
+**In the example:**
+- `echo` = command
+- `"Hello"` = argument
+
+*Note: If you see `root@kali:/#` instead, you're the root user working from `/` directory.*
 
 ### Command Structure
 
@@ -34,19 +73,6 @@ Example:
 We're going to use a lot of commands. Don't retype everything —  
 Just press **arrow up** or **arrow down** to scroll through what you typed before.
 
----
-
-## How to Use This File
-
-1. Commands are in **alphabetical order** for quick lookup when you forget what you're searching for.
-
-2. Each entry includes:
-   - Description (If needed)
-   - Basic command use 
-   - Common mistakes I've made
-   - Sometimes advanced arguments/options
-
-3. Concepts (not just commands) are included — like how a command works under the hood.
 
 ---
 
