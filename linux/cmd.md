@@ -1,7 +1,11 @@
+# Linux Commands Reference
+
+---
+
 ## 📁 Absolute Path vs Relative Path
 
 **Description:**  
-First thing you need to know about navigating Linux. **Always be careful for location use for all cmd**
+First thing you need to know about navigating Linux. **Always be careful about which path to use for all commands.**
 
 - **Absolute path** → Starts from the root `/`  
   Example: `/home/user/Documents/file.txt`
@@ -11,55 +15,60 @@ First thing you need to know about navigating Linux. **Always be careful for loc
 
 **Important Security Rule:**
 
-- Normally you can `cat filename` and it works fine.  
+Normally you can `cat filename` and it works fine.  
 But when you **execute a shell file**, Linux requires an absolute or explicit path for security reasons.
 
-- **Correct way to run a script in current directory:**  
-
-    ```bash
-    ./filename
-     ```
-
-**Trick & problem I faced**
-
-When you have to access the file from your home directory but absolute path not relative,you the following example.
-
-**Example of absolute path from home directory:**
+Correct way to run a script in the current directory:
 
 ```bash
-  command ~/name
- ```
+./filename
+```
+
+**Trick & problem I faced:**
+
+When you need to access a file using an absolute path from your home directory, use the following pattern:
+
+```bash
+command ~/name
+```
+
 - `command` = what you want to do
--  `~` = your home directory
-- `/` = absolute path
+- `~` = your home directory
+- `/` = absolute path separator
 - `name` = your file name
 
 ---
 
-## Copy file
+## Copy File
 
-**cmd**: 
- ```bash
-  cp source destination
- ```
----
+**cmd:**
 
-## Create file
-
-**cmd**: 
- ```bash
-    touch filename
- ```
+```bash
+cp source destination
+```
 
 ---
 
-## Difference between file 
+## Create File
 
-**cmd**:  
- ```bash
-    diff file1 file2
- ```
-**output example**:
+**cmd:**
+
+```bash
+touch filename
+```
+
+---
+
+## Difference Between Files
+
+**cmd:**
+
+```bash
+diff file1 file2
+```
+
+**Output example:**
+
 ```bash
 2c2
 < world
@@ -67,232 +76,255 @@ When you have to access the file from your home directory but absolute path not 
 > universe
 ```
 
-1a2-> means after line 1 of file1, add line 2 of file2 
+| Notation | Meaning |
+|----------|---------|
+| `1a2` | After line 1 of file1, add line 2 of file2 |
+| `2c2` | Change line 2 in file1 to match line 2 in file2 |
+| `3d2` | Delete line 3 from file1 to match file2 starting at line 2 |
 
-2c2-> means “change line 2 in first file to match line 2 in second file”
+**Key:**
+- `a` = add
+- `c` = change
+- `d` = delete
+- `<` = first file
+- `>` = second file
 
-3d2 -> delete line 3 from first file to match second file starting at line 2.
-
-**Trick & problem I faced**: Trying and understandig different output, how it works, or what changed properly.
-
-a = add
-
-c = change
-
-d = delete
-< = first file, > = second file
-
----
-
-## 📁Directory
-
--Current directory -> .
-
--Parent directory -> ..
-
--Home directory shortcut -> ~
-
--Previous directory -> - (used with cd -)
+**Trick & problem I faced:** Trying and understanding the different output formats — what changed and how to read it properly.
 
 ---
 
-## Find file
-**cmd**: 
- ```bash
-    find [starting_path] [options] [expression]
- ```
-**Option**:
+## 📁 Directory
 
--name: Search by exact filename
+| Symbol | Meaning |
+|--------|---------|
+| `.` | Current directory |
+| `..` | Parent directory |
+| `~` | Home directory shortcut |
+| `-` | Previous directory (used with `cd -`) |
 
--iname: Search by filename (case-insensitive)
+---
 
--type: Search by type (f=file, d=directory)
+## Find File
+
+**cmd:**
+
+```bash
+find [starting_path] [options] [expression]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-name` | Search by exact filename |
+| `-iname` | Search by filename (case-insensitive) |
+| `-type` | Search by type (`f` = file, `d` = directory) |
 
 ---
 
 ## 📁 Globbing
 
-**Description**:
+**Description:**
 
-
----
-
-## list all the file
-
-**cmd**: 
- ```bash
-    ls -option
- ```
-**Option**:
-
--a: to list all file even hidden one
+*(coming soon)*
 
 ---
 
-## Help 
-**cmd**: 
- ```bash
-    command --help
- ```
+## Help
 
-You can use other cmd as: 
+**cmd:**
 
--h (human-readable) -> risk as it only applicable for some cmd like du (disk usage), df (disk free space)
-
--? -> Some commands only like rm 
-
-help (Shell built-ins only)
-
----
-
-## Make directories
-
-**cmd**: 
-
- ```bash
-    mkdir - option filename
- ```
-**Option**:
--p -> Create parent directories as needed
 ```bash
-    mkdir -p parent/child/grandchild
- ```
--m -> Set permissions -> more in persmission section
+command --help
+```
+
+Other help options:
+
+| Option | Notes |
+|--------|-------|
+| `-h` | Human-readable — only works for some commands like `du`, `df` |
+| `-?` | Some commands only, like `rm` |
+| `help` | Shell built-ins only |
+
+---
+
+## List All Files
+
+**cmd:**
+
 ```bash
-    mkdir -m 755 myfolder 
- ```
--v -> Verbose – show each created directory
+ls -option
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-a` | List all files, including hidden ones |
+
+---
+
+## Make Directories
+
+**cmd:**
+
 ```bash
-    mkdir -v folder1 folder2
- ```
+mkdir -option dirname
+```
 
----
-## Make file
+**Options:**
 
-**cmd**: 
-
- ```bash
-    touch filename
- ```
-
---- 
-
-## Manual for cmd
-
-**cmd**: 
-
- ```bash
-    man [section] command_name
- ```
- **To use**:
- 
- Only use section if you want otherwise just below cmd is fine:
-  ```bash
-    man command_name
- ```
- You can scroll man pages with the arrow keys (and PgUp/PgDn) and search with /. After searching, you can hit n to go to 
- the next result and N to go to the previous result. Instead of /, you can use ? to search backwards!
-
- You can use man on man 
-  ```bash
-    man man
- ```
- You can use website for more detail if your are intrested in this.
- 
---- 
-## Move file
-
-**cmd**: 
-
- ```bash
-    mv source destination
- ```
+| Option | Description | Example |
+|--------|-------------|---------|
+| `-p` | Create parent directories as needed | `mkdir -p parent/child/grandchild` |
+| `-m` | Set permissions (see permissions section) | `mkdir -m 755 myfolder` |
+| `-v` | Verbose — show each created directory | `mkdir -v folder1 folder2` |
 
 ---
 
-## Read file 
+## Make File
 
-**cmd**: 
- ```bash
-    cat filename
- ```
+**cmd:**
 
----
-
-## Search content inside file
-
-**cmd**: 
-
- ```bash
-   grep Search_string /path/file
-  ```
-
-**Option**:
-
--i → case insensitive search
-
--r → recursive search through directories
-
--n → show line numbers
-
--v → show lines that DON'T match
-
--l → show only file names with match
-
-**Trick & problem**:
 ```bash
- grep "search string" /path/to/file
- ```
--> use "" if your string has space
+touch filename
+```
 
 ---
 
-## 📁 Symbolic Link & Hard link
+## Manual for Commands
 
--> mostly focused on symbolic link for now
+**cmd:**
 
-**Description**:
-A shortcut or pointer to another file or directory. Like a desktop shortcut in Windows or alias in macOS.
+```bash
+man [section] command_name
+```
 
-**cmd**: 
- ```bash
-   ln -s [target_file_or_directory] [link_name]
- ```
-example:
-Create a symlink to a file
- ```bash
-   ln -s /home/user/Documents/notes.txt mynote
- ```
+For most cases, just use:
 
-**How to identify symlinks**:
-- List with color (symlinks usually cyan/blue)
- ```bash
-   ls -l mynote
- ```
+```bash
+man command_name
+```
 
-- Output:
+**How to navigate man pages:**
 
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Scroll line by line |
+| `PgUp` / `PgDn` | Scroll page by page |
+| `/keyword` | Search forward |
+| `?keyword` | Search backward |
+| `n` | Next search result |
+| `N` | Previous search result |
+
+You can even run `man` on itself:
+
+```bash
+man man
+```
+
+---
+
+## Move File
+
+**cmd:**
+
+```bash
+mv source destination
+```
+
+---
+
+## Read File
+
+**cmd:**
+
+```bash
+cat filename
+```
+
+---
+
+## Remove File
+
+**cmd:**
+
+```bash
+rm filename
+```
+
+---
+
+## Search Content Inside File
+
+**cmd:**
+
+```bash
+grep search_string /path/to/file
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-i` | Case-insensitive search |
+| `-r` | Recursive search through directories |
+| `-n` | Show line numbers |
+| `-v` | Show lines that **don't** match |
+| `-l` | Show only filenames with a match |
+
+**Trick & problem I faced:**
+
+```bash
+grep "search string" /path/to/file
+```
+
+Use `""` if your search string contains spaces.
+
+---
+
+## 📁 Symbolic Link & Hard Link
+
+> Mostly focused on symbolic links for now.
+
+**Description:**  
+A shortcut or pointer to another file or directory — like a desktop shortcut in Windows or an alias in macOS.
+
+**cmd:**
+
+```bash
+ln -s [target_file_or_directory] [link_name]
+```
+
+**Example — create a symlink to a file:**
+
+```bash
+ln -s /home/user/Documents/notes.txt mynote
+```
+
+**How to identify symlinks:**
+
+List with detail (symlinks usually appear in cyan/blue):
+
+```bash
+ls -l mynote
+```
+
+Output:
+
+```
 lrwxrwxrwx 1 user user 24 Dec 15 mynote -> /home/user/Documents/notes.txt
+^
+'l' means link
+```
 
-^ 'l' means link
+Find all symlinks in current directory:
 
-- Find all symlinks
- ```bash
-   find . -type l
- ```
+```bash
+find . -type l
+```
 
-**Trick**:
+**Tricks:**
 
--Use absolute paths for reliable symlinks as i sometime have problem when using relative link as we may usewrong relative path.
--s -> if you forgot this option to use then it create a hard link which we dont want.
-
----
-
-## Remove file
-
-**cmd**: rm
- ```bash
-    rm filename
- ```
-
+- Use **absolute paths** for reliable symlinks — relative paths can break if you're in the wrong directory.
+- Don't forget `-s` — without it, `ln` creates a **hard link**, which is not what you usually want.
