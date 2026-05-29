@@ -248,7 +248,9 @@ help (Shell built-ins only)
 
 ---
 
-## 📁 Symbolic Link:
+## 📁 Symbolic Link & Hard link
+
+-> mostly focused on symbolic link for now
 
 **Description**:
 A shortcut or pointer to another file or directory. Like a desktop shortcut in Windows or alias in macOS.
