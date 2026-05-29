@@ -6,17 +6,29 @@ Hello — as this repo is my study database and search hub, this file covers Lin
 
 ## How to Use This File
 
-1. The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search or you can just      jump in if you already know what you're looking for.
-  
-2. As its in alphabetic order, some more advance concept may come first or you may not understand something, just use the file i will mention it in their own section.
-   
-3. Each entry includes:
-   - Description (If needed)
-   - Basic command use 
-   - Common mistakes I've made
-   - Sometimes advanced arguments/options
+1.📝 **Search by Description, Not Command**. 
+  - If you want command to create a file? Search 'create file', not 'touch'
 
-4. Concepts (not just commands) are included — like how a command works under the hood.
+2. 🔤 **Alphabetical Order for Easy Scanning**.
+    - Commands and concepts are arranged **A to Z** for easy use.
+    - **Pro tip:** Use your editor's search (`Ctrl+F` or `/`) to jump instantly.
+  
+4. 🧠 **Advanced Concepts May Appear Early**
+      - Some complex ideas come first alphabetically (like `📁 Absolute Path` before basic commands).
+ 
+  **Solution:** 
+    - Each concept is **self-contained**
+    - Cross-references point to related sections
+    - Just keep reading — it will make sense later
+   
+ 5. 🧩 Concepts Included, Not Just Commands
+   - Description (If needed)
+   - Basic command use
+   - Sometimes advanced arguments/options
+   - Common mistakes I've made
+   
+  6. Icon Meaning
+      - 📁 means keyconcept in the file. otherwise its just command.
 
 ---
 
