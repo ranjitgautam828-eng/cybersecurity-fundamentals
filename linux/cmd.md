@@ -34,4 +34,20 @@ When you have to access the file from your home directory but absolute path not 
 - `/` = absolute path
 - `name` = your file name
 
-##
+## cat
+**Description**: Used for reading file 
+ ```bash
+    cat filename
+ ```
+**Problem**: make sure to point path propely relative and absoulte.
+**option**:
+
+##grep
+**Description**: Used forsearching content in the file 
+
+ ```bash
+    ./filename
+     ```
+
+**Problem**:
+**option**:
