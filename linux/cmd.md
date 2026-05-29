@@ -96,22 +96,6 @@ d = delete
 
 ---
 
-## Help 
-**cmd**: 
- ```bash
-    command --help
- ```
-
-You can use other cmd as: 
-
--h (human-readable) -> risk as it only applicable for some cmd like du (disk usage), df (disk free space)
-
--? -> Some commands only like rm 
-
-help (Shell built-ins only)
-
----
-
 ## Find file
 **cmd**: 
  ```bash
@@ -143,6 +127,22 @@ help (Shell built-ins only)
 **Option**:
 
 -a: to list all file even hidden one
+
+---
+
+## Help 
+**cmd**: 
+ ```bash
+    command --help
+ ```
+
+You can use other cmd as: 
+
+-h (human-readable) -> risk as it only applicable for some cmd like du (disk usage), df (disk free space)
+
+-? -> Some commands only like rm 
+
+help (Shell built-ins only)
 
 ---
 
