@@ -6,15 +6,17 @@ Hello — as this repo is my study database and search hub, this file covers Lin
 
 ## How to Use This File
 
-1. The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search. Or you can just      jump in if you already know what you're looking for. As its in alphabetic order, some more advance concept may come         first or you may not understand something, just use the file i will mention it in their own section.
+1. The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search or you can just      jump in if you already know what you're looking for.
+  
+2. As its in alphabetic order, some more advance concept may come first or you may not understand something, just use the file i will mention it in their own section.
    
-2. Each entry includes:
+3. Each entry includes:
    - Description (If needed)
    - Basic command use 
    - Common mistakes I've made
    - Sometimes advanced arguments/options
 
-3. Concepts (not just commands) are included — like how a command works under the hood.
+4. Concepts (not just commands) are included — like how a command works under the hood.
 
 ---
 
