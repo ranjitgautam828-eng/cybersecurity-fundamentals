@@ -33,7 +33,7 @@ You'll be using a terminal (Kali Linux or any other distribution — same rules 
 
 Before running commands, know what you're looking at:
 
-bro@kali:~$ echo "Hello"
+bro@kali:~$ mkdir -p time/no_time
 
 
 | Part | Meaning |
@@ -51,9 +51,9 @@ bro@kali:~$ echo "Hello"
 - `#` = root user
 
 **In the example:**
-- `echo` = command
-- `"Hello"` = argument
-
+- `mkdir` = command to create directory
+-p = option (tells mkdir to make parent folders too) if time directory is not there
+- time/no_time = directories to create
 *Note: If you see `root@kali:/#` instead, you're the root user working from `/` directory.*
 
 ### Command Structure
