@@ -6,7 +6,7 @@ Hello — as this repo is my study database and search hub, this file covers Lin
 
 ## Linux Basics (Before You Start)
 
-The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search. Or you can just jump in if you already know what you're looking for.
+The commands and keywords you'll learn are mostly in **alphabetical order** for easier use and search. Or you can just jump in if you already know what you're looking for. As its in alphabetic order, some more advance concept may come first or you may not understand something, just use the file i will mention it in their own section.
 
 ### How Linux Commands Work
 
