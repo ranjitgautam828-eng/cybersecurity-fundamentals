@@ -122,8 +122,8 @@ ld -o p p.o
 What it does: loads the value sitting at address `133700` directly into `rdi`, then exits.
 
 > Note: In GAS Intel syntax you need `qword ptr` to specify the size. NASM figures it out automatically — that's the only difference.
-We already talked in **Assembly Language Intro* abuot as and ld but that here is brief:
-as: for changing code in binary language its not readable
+>We already talked in **Assembly Language Intro** about as and ld but that here is brief:
+>as: for changing code in binary language its not readable
 ld: linking so we can read the file
 
 ---
