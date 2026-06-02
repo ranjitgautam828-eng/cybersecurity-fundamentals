@@ -39,6 +39,40 @@ mov rax, 42
 
 ---
 
+## Moving Between Registers
+
+You can also move a value **from one register to another** using the same `mov` instruction — just use two registers instead of a number.
+
+```asm
+mov rdi, rsi   ; copies the value inside rsi into rdi
+```
+
+The value in `rsi` doesn't disappear — it gets **copied** into `rdi`. Think of it like copy-paste, not cut-paste.
+
+### Example
+
+If `rsi` already holds the exit code (put there by the OS or whatever ran your program), you can forward it directly:
+
+```asm
+mov rdi, rsi   ; copy rsi's value into rdi (this becomes our exit code)
+mov rax, 60    ; syscall 60 = exit
+syscall        ; exit with whatever value was in rsi
+```
+
+To try it out:
+
+```bash
+echo -e "mov rdi, rsi\nmov rax, 60\nsyscall" > p.s
+as -o p.o p.s
+ld -o p p.o
+./p
+echo $?
+```
+
+> The exit code you get depends on what value `rsi` happened to hold when the program started — that's set by the OS/shell at launch.
+
+---
+
 ## Syscalls (System Calls)
 
 Just like assembly lets your program talk to the CPU, **syscalls** let your program talk to the **operating system**.
