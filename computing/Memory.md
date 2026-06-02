@@ -16,7 +16,7 @@
 ```text
 Long-Term Memory
       ↓
-Short-Term Memory (work on info)
+Short-Term Memory (work on Assembly Language Intro)
       ↓
 Store results back to Long-Term Memory
 ```
