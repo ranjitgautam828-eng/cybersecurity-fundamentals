@@ -1,92 +1,219 @@
-# CPU Architecture & Assembly Language Basics
+# CPU Architecture & Assembly Language
 
-## The CPU & Its Language
+## What is a CPU?
 
-The CPU performs main processing in tandem with other hardware components. Instructions given to the CPU are called **assembly language**, and each CPU architecture uses a different flavor of this language.
-
-Any program written in any language (Python, C++, C, and others) is ultimately interpreted/translated into assembly language.
+The CPU is the main processor of a computer. You give it instructions using **assembly language** — every program (Python, C++, etc.) eventually gets translated into assembly for the CPU to run.
 
 ---
 
-## Major CPU Architectures
+## CPU Architectures
 
-### x86 Architecture
-- The main architecture frequently referred to in studies
-- Created by Intel at the dawn of the PC age
-- The most common reference architecture in learning
+There are two major ones:
 
-### ARM Architecture
-- Another major architecture
-- Together with x86, these make up the majority of PC CPUs worldwide
+- **x86** — made by Intel, most common in learning/study material
+- **ARM** — also very common; together with x86, these cover most CPUs worldwide
 
-## Assembly Language Components
+---
 
-Assembly language consists of:
+## Assembly Language Basics
 
-- **Operands** - What we deal with (data)
-- **Operations** - Actions like ADD, SUB, MULT (multiplication)
+Assembly has two parts:
 
-> Assembly is a direct translation of the binary code ingested by the CPU.
+- **Operands** — the data being worked on
+- **Operations** — actions like `ADD`, `SUB`, `MULT`
+
+Assembly is essentially a human-readable version of the binary code the CPU actually reads.
+
+---
 
 ## Registers
 
-Registers are another important topic:
+Registers are tiny storage slots inside the CPU.
 
-- Extremely constrained in number
-- Typically **10-20 general purpose registers** available
+- Very limited — usually only **10–20 general purpose registers**
+- Example of moving a value into a register:
 
-### Register Example
-
-Moving a value with `rex` prefix:
-
-```assembly
-mov rax, value
+```asm
+mov rax, 42
 ```
+
 ---
 
-## System Call Instructions
+## Syscalls (System Calls)
 
-## Overview
+Just like assembly lets your program talk to the CPU, **syscalls** let your program talk to the **operating system**.
 
-Just as a program contacts the CPU with assembly language, it contacts the **operating system (OS)** with **syscalls** (system calls).
+- Each syscall has a number (starts from 0)
+- Linux has around **330 syscalls**
+- You put the syscall number in `rax`, then run `syscall`
 
-Think of it like ordering food - there are different calls a program can invoke. For example, Linux has around 330 different syscalls, though this number changes over time as syscall numbers are added or deprecated.
+```asm
+mov rax, 42   ; pick syscall #42
+syscall       ; run it
+```
 
-## Syscall Numbers
+---
 
-Each syscall is identified by a specific number, counting from 0 onward.
+## Exit Codes
 
-### Example: Invoking Syscall 42
+To exit a program, you use **syscall 60** (exit). It takes one parameter — the exit code — passed through `rdi`.
 
-To invoke syscall 42, you would write:
-
-```assembly
-mov rax, 42
+```asm
+mov rax, 60   ; syscall number for exit
+mov rdi, 0    ; exit code (0 = success)
 syscall
 ```
+
+Change `rdi` to any number to set a custom exit code.
+
 ---
 
-# Exit Codes & System Calls
+## Building an Executable
 
-## Exit Code Overview
+Three steps to go from code → runnable program:
 
-Exit codes are passed just like in every system:
-- The system call number (e.g., 60 for exit) is specified in the `rax` register
-- Parameters are passed to the syscall through registers
+### 1. Write your assembly file
 
-## Parameter Passing
+Save it as `program.s`. Always start with the Intel syntax directive:
 
-While system calls can have multiple parameters, `exit` only takes one. The first parameter is passed through another register: **`rdi`**.
-
-### Example
-
-```assembly
-mov rax, 60    ; syscall number - like a function call metaphorically (exit)
-mov rdi, 0     ; parameter - like an option on what to do inside the function (exit code 0)
-syscall        ; "do it" button - execute the syscall
+```asm
+.intel_syntax noprefix
+.global _start
+_start:
+    mov rdi, 42
+    mov rax, 60
+    syscall
 ```
-```assembly
-echo -e "mov rax, 60\nmov rdi, 42\nsyscall" > filename.s
+
+> `.global _start` and `_start:` tell the linker where your program begins. Without it, you'll get a warning (it still works, but this silences it).
+
+### 2. Assemble into an object file
+
+```bash
+as -o program.o program.s
 ```
+
+This converts your assembly into binary code, but it's not runnable yet.
+
+### 3. Link into a final executable
+
+```bash
+ld -o program program.o
+```
+
+This links the object file into a real executable.
+
+### Run it
+
+```bash
+./program
+echo $?   # prints the exit code
+```
+
+Output:
+```
+42
+```
+
 ---
 
+## Full Example — Explained
+
+Goal: write a program that exits with code **42**.
+
+---
+
+### The Assembly Code (`program.s`)
+
+```asm
+.intel_syntax noprefix   ; (1)
+.global _start           ; (2)
+_start:                  ; (3)
+    mov rdi, 42          ; (4)
+    mov rax, 60          ; (5)
+    syscall              ; (6)
+```
+
+**(1) `.intel_syntax noprefix`**
+This is a directive (an instruction to the assembler, not to the CPU).
+It tells `as` — the assembler tool — that your code is written in Intel syntax.
+Without this line, the assembler assumes AT&T syntax, which looks different and would misread your code.
+
+**(2) `.global _start`**
+This makes the `_start` label visible to the **linker** (`ld`).
+The linker is the tool that turns your assembled code into a final runnable file — it needs to know where your program starts. `.global` exposes the label so the linker can see it.
+
+**(3) `_start:`**
+This is a **label** — it's like putting a sticky note on this line of code saying "this is where the program begins."
+The linker looks for this exact label to know the entry point of your program.
+
+**(4) `mov rdi, 42`**
+Put the value `42` into the register `rdi`.
+`rdi` is where the **first parameter** of a syscall goes.
+For the exit syscall, that parameter is the **exit code** — so we're saying "exit with code 42."
+
+**(5) `mov rax, 60`**
+Put the value `60` into the register `rax`.
+`rax` is always where the **syscall number** goes.
+Syscall 60 on Linux = `exit`. So we're telling the OS: "I want to call the exit function."
+
+> Notice: we load `rdi` before `rax`. Order doesn't matter here — both registers just need to be set before we hit `syscall`. It's just a style choice.
+
+**(6) `syscall`**
+This is the trigger — it says "go do it now."
+The CPU looks at `rax` to know which syscall to run (60 = exit), then looks at `rdi` for the parameter (42 = exit code), and hands control to the OS. The program ends here.
+
+---
+
+### Step 1 — Assemble
+
+```bash
+as -o program.o program.s
+```
+
+- `as` reads your `program.s` file
+- Converts it into binary machine code
+- Outputs `program.o` — an **object file**
+
+The object file has your code in binary, but it's not a complete runnable program yet. Think of it as a compiled piece — it still needs to be packaged.
+
+---
+
+### Step 2 — Link
+
+```bash
+ld -o program program.o
+```
+
+- `ld` takes your object file(s) and links them into a final executable
+- Outputs a file called `program`
+- This is the actual runnable binary
+
+In real projects there are often many object files — `ld` stitches them all together. Even with just one file, this step is still required.
+
+---
+
+### Step 3 — Run
+
+```bash
+./program
+echo $?
+```
+
+- `./program` runs your executable
+- The program immediately calls exit with code 42 and stops
+- `echo $?` prints the **exit code of the last command** — which is `42`
+
+Output:
+```
+42
+```
+
+---
+
+### The Full Flow at a Glance
+
+```
+program.s  →(as)→  program.o  →(ld)→  program  →(run)→  exits with 42
+ source        object file        executable
+```
