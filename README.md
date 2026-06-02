@@ -9,8 +9,8 @@ It won't be perfectly structured — let's be real — but it'll grow into a rev
 This covers different areas of cybersecurity, each with its own file. Below are the ones I'm actively messing with. More will appear as I break and fix things in the field.
 
 **Fields:**  
-1. Linux  
-2. Computer Architecture  
+1. Linux  (linux command guid)
+2. Computing ( contain fundamentals of computer) 
 3. Security Concepts (the fancy terms people throw around)
 
 ---
@@ -19,9 +19,9 @@ This covers different areas of cybersecurity, each with its own file. Below are 
 
 This repo helps me:
 
-- Actually understand stuff (not just fake it)  
-- Revise fast before I forget  
-- Build practical roots  
+- Actually understand and revise stuff fast. 
+- Revise fast before I forget.  
+- Build practical roots.
 - See how far I've come (and how much I still break)
 
 ---
@@ -35,7 +35,8 @@ No step-by-step lab walkthroughs — those go in a separate HTB lab repo. This i
 
 ## Note inside You'll Find
 - Description
-- Quick Notes  
+- Some times Theory heavy for some file.
+- Quick Notes.  
 - Common Mistakes (oof)  
 - Useful Tricks (aha!)  
 - Realizations (why didn't I know this earlier?)
