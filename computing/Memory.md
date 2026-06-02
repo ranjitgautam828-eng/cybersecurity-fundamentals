@@ -1,184 +1,213 @@
-# Memory & Memory Hierarchy
+# Memory & Addressing Notes
 
-## Human Memory Analogy
+## Human Memory vs Computer Memory
 
-* **Short-Term Memory (STM)**
+Think of RAM like human short-term memory.
 
-  * Used for current thinking and tasks.
-  * Holds about **5–9 items**.
-* **Long-Term Memory (LTM)**
+* We store most knowledge in long-term memory (books, journals, Wikipedia, experiences).
+* When solving a problem, we load only the needed information into short-term memory.
+* Short-term memory is limited (about 5–9 items).
+* After using the information, new knowledge is stored back into long-term memory.
 
-  * Stores knowledge permanently.
-  * Examples: books, journals, Wikipedia.
-
-### Memory Flow
+Computer memory works similarly:
 
 ```text
-Long-Term Memory
+Storage (SSD/HDD)
       ↓
-Short-Term Memory (work on Assembly Language Intro)
+     RAM
       ↓
-Store results back to Long-Term Memory
+  Registers
 ```
+
+* Registers = what the CPU is actively thinking about right now.
+* RAM = information available for quick access.
+* Storage = long-term memory.
+
+Smaller memory = faster access.
+Larger memory = slower access.
 
 ---
 
-# Computer Memory Hierarchy
+## Stack
 
-```text
-Registers → RAM → Storage
-```
+The stack is a special area of memory used for temporary data.
 
-* **Registers**
-
-  * Smallest
-  * Fastest
-  * Inside CPU
-
-* **RAM**
-
-  * Larger than registers
-  * Slower than registers
-  * Main memory
-
----
-
-# Stack Basics
-
-* `rsp` = Stack Pointer
-* CPU knows stack location through `rsp`
+`rsp` always points to the top of the stack.
 
 ```asm
 push rcx
+```
 
-; equivalent to
+really means:
 
+```asm
 sub rsp, 8
 mov [rsp], rcx
 ```
 
+Idea:
+
+* Move stack pointer down.
+* Put value there.
+
 ---
 
-# Memory Access
+## Memory Access
 
-## Read Memory
+Registers hold data directly.
+
+Memory holds data at addresses.
+
+To access memory:
 
 ```asm
-mov rax, 0x12345
 mov rbx, [rax]
 ```
 
-* Load value at address `0x12345` into `rbx`
+Read:
 
-## Write Memory
+* Go to address stored in `rax`.
+* Copy value into `rbx`.
 
 ```asm
-mov rax, 0x133337
 mov [rax], rbx
 ```
 
-* Store `rbx` into address `0x133337`
+Write:
+
+* Go to address stored in `rax`.
+* Store `rbx` there.
+
+Think:
+
+```text
+Register = value
+[Register] = value at address
+```
 
 ---
 
-# Address Calculation
+## Address Calculation
 
-General form:
+Memory locations are often calculated rather than hardcoded.
+
+```asm
+[rsp + rax*8]
+```
+
+means:
+
+```text
+Base address
++ offset
++ scaling
+```
+
+Useful for:
+
+* Arrays
+* Stack frames
+* Data structures
+
+Common formula:
 
 ```text
 base + index*scale + offset
 ```
 
-Example:
+---
+
+## LEA
+
+`lea` calculates an address without reading memory.
 
 ```asm
-mov rbx, [rsp + rax*8]
+lea rbx, [rsp + rax*8]
 ```
 
-Common scales:
+Memory is NOT accessed.
+
+Think:
 
 ```text
-1, 2, 4, 8
+lea = give me the address
+mov = give me the value
 ```
 
 ---
 
-# LEA (Load Effective Address)
+## RIP Addressing
 
-Calculates address without reading memory.
-
-```asm
-lea rbx, [rsp + rax*8 + 5]
-```
-
-* Address stored in `rbx`
-* No memory access
-
----
-
-# RIP-Relative Addressing
-
-* `rip` = Instruction Pointer
-* Points to next instruction
-
-Get address:
+`rip` points to the next instruction.
 
 ```asm
 lea rax, [rip]
-lea rax, [rip+8]
 ```
 
-Read near current code:
+Gets the address near the current code.
 
-```asm
-mov rax, [rip]
-```
+Useful because:
 
-Write near current code:
-
-```asm
-mov [rip], rax
-```
-
-Uses:
-
-* Position-independent code
-* Shared libraries
-* ASLR/security features
+* Program doesn't need fixed memory locations.
+* Code can run anywhere in memory.
+* Helps modern security features.
 
 ---
 
-# Endianness
+## Endianness
 
-x86/x64 = **Little Endian**
+Memory stores bytes one at a time.
+
+x86 uses Little Endian.
 
 ```text
-Value: 0x12345678
+0x12345678
+```
 
-Memory:
+stored as:
+
+```text
 78 56 34 12
 ```
 
-* Lowest byte stored first
+Rule:
+
+```text
+Lowest byte first.
+```
 
 ---
 
-# Quick Revision
+## Quick Mental Models
 
-| Register | Purpose             |
-| -------- | ------------------- |
-| rsp      | Stack Pointer       |
-| rip      | Instruction Pointer |
-| rax      | General Purpose     |
-| rbx      | General Purpose     |
-| rcx      | General Purpose     |
+```text
+Registers = CPU's current thoughts
 
-### Common Syntax
+RAM = working memory
 
-```asm
-[rax]          ; memory at rax
-[rsp+8]        ; offset from stack
-[rsp+rax*8]    ; indexed access
-lea rax,[rsp]  ; calculate address
-mov rax,[rsp]  ; read value
+Storage = long-term memory
 ```
+
+```text
+mov = get/store value
+
+lea = get address
+```
+
+```text
+rax      -> value
+
+[rax]    -> memory at address rax
+```
+
+```text
+rsp = top of stack
+
+rip = current code location
+```
+
+in here we will practise acessing dat stored in memory:
+we normally do 
+mov rex, 3112
+for moving value but if you want to see that for adddess:
+mov rex, [3112] now 3112 is not value but the address which content value
