@@ -109,7 +109,7 @@ Stored bytes:    0x78  0x56  0x34  0x12
 
 ---
 
-## Dereferencing — Step by Step {MAIN}
+## Dereferencing — Step by Step 
 
 ### 1. Simple dereference — load from hardcoded address
 
@@ -255,3 +255,11 @@ In **NASM**, the size is inferred automatically. Same logic, less typing. You're
 - [ ] Load with offset (`[rdi + 1]` etc.)
 - [ ] Follow a pointer chain (2 loads)
 - [ ] Double dereference (`rax` → address → address → secret)
+
+---
+
+>**Why this matters for security**:
+If you understand how pointers access memory, you can understand most serious bugs — like buffer overflows, use-after-free errors, and format string attacks.
+Every memory corruption problem is just reading or writing to the wrong memory address.
+
+---
