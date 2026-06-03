@@ -1,265 +1,304 @@
-# 🧠 Memory Addressing in Assembly 
+# Memory Addressing in Assembly
+
+> **Where this fits:** The CPU can only work on data that's in registers — but registers are tiny (16 slots). Everything else lives in memory (RAM). This file is about how we reach into memory to read and write values, and how addresses, pointers, and pointer chains work.
 
 ---
 
-## The Big Picture: Memory Hierarchy
+## Table of Contents
 
-Think of it like this:
-
-```
-Registers  →  fastest, tiny (inside CPU)
-RAM        →  slower, bigger (main memory)
-Storage    →  slowest, huge (disk)
-```
-
-> **Analogy:** Registers are like what's in your hand right now. RAM is your desk. Storage is a filing cabinet across the room.
+- [The Memory Hierarchy](#the-memory-hierarchy)
+- [Reading and Writing Memory](#reading-and-writing-memory)
+- [Address Calculation Formula](#address-calculation-formula)
+- [LEA — Load Effective Address](#lea--load-effective-address)
+- [The Stack Pointer (rsp)](#the-stack-pointer-rsp)
+- [RIP-Relative Addressing](#rip-relative-addressing)
+- [Endianness](#endianness-x86x64--little-endian)
+- [Dereferencing — Step by Step](#dereferencing--step-by-step)
+- [Quick Syntax Reference](#quick-syntax-reference)
+- [Security Context](#-security-context--why-this-matters-for-hacking)
+- [Practice Checklist](#practice-checklist)
 
 ---
 
-## Accessing Memory (Read & Write)
+## The Memory Hierarchy
 
-### Reading from memory
+```
+┌─────────────────────────────────────────────────┐
+│  Registers   │  ~16 slots │ fastest │ inside CPU │
+├─────────────────────────────────────────────────┤
+│  RAM         │  GBs       │ slower  │ main memory│
+├─────────────────────────────────────────────────┤
+│  Storage     │  TBs       │ slowest │ disk/SSD   │
+└─────────────────────────────────────────────────┘
+```
+
+**Analogy:** Registers = what's in our hand right now. RAM = our desk. Storage = a filing cabinet across the room.
+
+The CPU can only do math on register values. If the data we need is in RAM, we have to **load** it into a register first. If we've computed something and need to **save** it, you write it back to RAM.
+
+---
+
+## Reading and Writing Memory
+
+Memory is one giant array of bytes. Every byte has an **address** — a number that tells us where it is.
+
+### Reading from memory (load)
+
 ```asm
-mov rax, 0x12345      ; rax = the address 0x12345
+mov rax, 0x12345      ; rax = the address 0x12345 (just a number)
 mov rbx, [rax]        ; rbx = the VALUE stored at that address
 ```
-The `[ ]` brackets mean **"go to that address and grab the value"** — like following a link.
 
-### Writing to memory
+The `[ ]` brackets mean **"go to this address and grab what's there"** — like following a link or opening a box.
+
+### Writing to memory (store)
+
 ```asm
-mov rax, 0x133337     ; rax = the address
-mov [rax], rbx        ; put rbx's value INTO that address
+mov rax, 0x133337     ; rax = target address
+mov [rax], rbx        ; write rbx's value INTO that address
 ```
 
-> **Simple rule:** `[something]` = dereference it (go there and grab/put the value).
+### The simple rule
+
+| Syntax | Meaning |
+|---|---|
+| `mov rax, rbx` | rax = the value of rbx |
+| `mov rax, [rbx]` | rax = the value **at the address** rbx holds |
+| `mov [rax], rbx` | write rbx's value **to the address** rax holds |
+
+> **`[ ]` = dereference.** Follow the address, don't just use the number.
 
 ---
 
 ## Address Calculation Formula
 
+We don't have to use a plain register as an address. we can compute addresses inline:
+
 ```
 [base + index * scale + offset]
 ```
 
-| Part   | Example   | Meaning                    |
-|--------|-----------|----------------------------|
-| base   | `rsp`     | starting address           |
-| index  | `rax`     | which element              |
-| scale  | `8`       | size of each element (1/2/4/8) |
-| offset | `+5`      | extra shift                |
+| Part | Example | Meaning |
+|---|---|---|
+| `base` | `rsp` | starting address (usually a register) |
+| `index` | `rax` | which element you want |
+| `scale` | `8` | size of each element — must be 1, 2, 4, or 8 |
+| `offset` | `+5` | fixed extra shift |
+
+**Example — reading element `rax` from an array at `rsp`:**
 
 ```asm
-mov rbx, [rsp + rax*8]    ; go to rsp, jump rax*8 bytes ahead, read value
+mov rbx, [rsp + rax*8]    ; go to rsp, jump (rax × 8) bytes, read value
 ```
+
+Why `* 8`? Because each element is 8 bytes (64-bit values). If we want element 0, jump 0. Element 1, jump 8. Element 2, jump 16. Etc.
 
 ---
 
 ## LEA — Load Effective Address
 
-`lea` **calculates** an address but does **NOT** read from memory.
+`lea` **calculates** an address without actually reading from memory.
 
 ```asm
-lea rbx, [rsp + rax*8 + 5]   ; rbx = the calculated address itself
-mov rbx, [rsp + rax*8 + 5]   ; rbx = the VALUE at that address
+lea rbx, [rsp + rax*8 + 5]   ; rbx = the address itself (rsp + rax*8 + 5)
+mov rbx, [rsp + rax*8 + 5]   ; rbx = the VALUE stored at that address
 ```
 
-> **Think of it like:** `lea` gives you the house number. `mov [...]` actually opens the door and goes inside.
+**Analogy:**
+- `lea` gives us the house number written on paper
+- `mov [...]` actually opens the door and walks inside
+
+**Why use `lea`?** Sometimes we need the address itself (to pass as a pointer, or to do math on it), not the value at that address.
 
 ---
 
-## The Stack
+## The Stack Pointer (rsp)
 
-- `rsp` = **Stack Pointer** — always points to the top of the stack.
+`rsp` is a register that always points to the **top of the stack** — a pre-allocated region of memory our program gets for free.
 
 ```asm
 push rcx
 
-; same as doing this manually:
-sub rsp, 8        ; make room (stack grows downward)
-mov [rsp], rcx    ; store rcx there
+; push does this manually:
+sub rsp, 8        ; grow the stack downward (stack grows down in x86-64)
+mov [rsp], rcx    ; store rcx at the new top
 ```
+
+See `The_Stack.md` for a full breakdown of how the stack works and how program arguments are laid out on it.
 
 ---
 
 ## RIP-Relative Addressing
 
-- `rip` = **Instruction Pointer** — points to the *next* instruction being executed.
+`rip` is the **Instruction Pointer** — it always holds the address of the *next* instruction to be executed.
 
 ```asm
 lea rax, [rip]      ; rax = address of the next instruction
-mov rax, [rip]      ; read the value AT the next instruction's address
+mov rax, [rip]      ; rax = the bytes AT the next instruction's address
 ```
 
 **Why does this matter?**
-- Used in position-independent code (the program can be loaded anywhere in memory)
-- Important for shared libraries and security features like ASLR
+- Used in **position-independent code (PIC)** — code that works regardless of where it's loaded in memory
+- Required for shared libraries (`.so` files)
+- Relevant to **ASLR** (Address Space Layout Randomization) — a security feature that randomizes where code is loaded. RIP-relative addressing is what makes code survive ASLR.
 
 ---
 
 ## Endianness (x86/x64 = Little Endian)
 
-When a value like `0x12345678` is stored in memory, it goes in **backwards by byte**:
+When we store a multi-byte value like `0x12345678` in memory, the bytes go in **lowest byte first**:
 
 ```
-Memory address:  [0]   [1]   [2]   [3]
-Stored bytes:    0x78  0x56  0x34  0x12
+Address:  [0]   [1]   [2]   [3]
+Stored:   0x78  0x56  0x34  0x12
+          ↑ least significant byte first
 ```
 
-> The **least significant byte** goes first. Just something to remember when reading raw memory dumps.
+This is **little-endian** — x86 and x64 always work this way.
+
+**When does this matter?**
+- Reading raw memory dumps (in GDB, Wireshark, hex editors)
+- Writing shellcode that embeds addresses as bytes
+- Network protocols (most use big-endian, so you have to flip)
+
+> It doesn't affect normal assembly (`mov rax, 0x12345678` just works). We only notice endianness when we inspect raw bytes.
 
 ---
 
-## Dereferencing — Step by Step 
+## Dereferencing — Step by Step
 
-### 1. Simple dereference — load from hardcoded address
+These six examples build on each other. Each one is a real pattern from pwn.college's Computer Memory module.
 
-**Your code:**
+---
+
+### 1. Load from a hardcoded address
+
 ```bash
 echo -e ".intel_syntax noprefix\n.global _start\n_start:\n mov rdi, qword ptr [133700]\n mov rax, 60\n syscall" > p.s
 as -o p.o p.s
 ld -o p p.o
 ```
-What it does: loads the value sitting at address `133700` directly into `rdi`, then exits.
 
-> **Note:** In GAS Intel syntax you need `qword ptr` to specify the size. NASM figures it out automatically — that's the only difference.
+What happens: loads the value stored at address `133700` into `rdi`, then exits with it.
 
-We already talked about `as` and `ld` in the **Assembly Language Intro**, but here's a brief reminder:
-
-- **`as`** (GNU Assembler): Converts assembly code into binary machine code (not human-readable)
-- **`ld`** (Linker): Links object files together to create an executable file we can run
+> **`qword ptr`** — tells GAS (GNU Assembler) this is a 64-bit (8-byte) read. NASM figures this out automatically; GAS needs the hint when using a raw address.
 
 ---
 
-### 2. Using a register as pointer — `rax` holds the address
+### 2. Use a register as the address
 
-**Your code:**
-```bash
-echo -e ".intel_syntax noprefix\n.global _start\n_start:\n mov rdi, qword ptr [rax]\n mov rax, 60\n syscall" > p.s
-```
-What it does: `rax` already contains the address (set up by pwn.college), so `[rax]` follows it and loads the value into `rdi`.
-
-Same idea as example 1 — just using a register instead of hardcoding the address.
-
----
-
-### 3. Dereferencing yourself — `rdi` points to its own value
-
-**Your code:**
-```bash
-echo -e ".intel_syntax noprefix\n.global _start\n_start:\n mov rdi, qword ptr [rdi]\n mov rax, 60\n syscall" > p.s
-```
-What it does: `rdi` holds an address, and you use that address to load a new value *back into* `rdi`. Register pointing to itself — totally valid!
-
----
-
-### 4. Dereference with offset — multiple values at one address
-
-If address `133700` holds multiple values in a row:
-```
-133700 → 50
-133701 → 42
-133702 → 99
-```
 ```asm
-mov rax, [rdi]        ; gets 50  (first value)
-mov rax, [rdi + 1]    ; gets 42  (second value, 1 byte ahead)
-mov rax, [rdi + 2]    ; gets 99  (third value, 2 bytes ahead)
+mov rdi, qword ptr [rax]   ; follow the address stored in rax
 ```
+
+pwn.college already put the right address in `rax` — you just follow it.
+
+Same as example 1, except the address is in a register instead of hardcoded.
 
 ---
 
-### 5. Stored addresses — following a pointer chain
+### 3. Register pointing to itself
 
-**Your code:**
+```asm
+mov rdi, qword ptr [rdi]   ; rdi holds an address → follow it → load new value back into rdi
+```
+
+`rdi` contains an address. You dereference it and put the result back into `rdi`. Register pointing to itself — totally valid.
+
+---
+
+### 4. Dereference with offset
+
+If one address holds multiple values in a row:
+
+```
+address 133700 → value: 50
+address 133708 → value: 42   (8 bytes later)
+address 133716 → value: 99   (16 bytes later)
+```
+
+```asm
+mov rax, [rdi]        ; gets 50  (at rdi + 0)
+mov rax, [rdi + 8]    ; gets 42  (at rdi + 8)
+mov rax, [rdi + 16]   ; gets 99  (at rdi + 16)
+```
+
+> Offsets are multiples of 8 for 64-bit values because each one takes 8 bytes of space.
+
+---
+
+### 5. Follow a pointer chain (2 hops)
+
 ```bash
 echo -e ".intel_syntax noprefix\n.global _start\n_start:\n mov rdi, [567800]\n mov rdi, [rdi]\n mov rax, 60\n syscall" > p.s
 ```
-What it does:
-- Step 1: load the value at `567800` into `rdi` — this value is itself another address
-- Step 2: follow that address to get the actual secret value
 
-> **Analogy:** You open a bag and find a key inside. The key opens the real locker. You had to open two things.
+What happens:
+- Load the value at `567800` into `rdi` — that value is itself another address
+- Follow that second address to get the actual secret value
+
+**Analogy:** You open a bag and find a key. The key opens the real locker. Two steps to get what you want.
+
+```
+567800 → [address X]
+address X → [secret value]
+```
 
 ---
 
-### 6. Double dereference — pointer to a pointer (pwn.college challenge)
+### 6. Double dereference — pointer to a pointer
 
-**Your code:**
 ```bash
 echo -e ".intel_syntax noprefix\n.global _start\n_start:\n mov rdi, qword ptr [rax]\n mov rdi, qword ptr [rdi]\n mov rax, 60\n syscall" > p.s
 ```
-What it does:
-- `rax` contains an address → follow it → get `secret2` (which is itself an address)
-- Follow `secret2` → get `secret1` (the actual value you need in `rdi`)
 
-**How the addressing works here:**
-1. pwn.college sets up `rax` to point at a memory location containing another address
-2. `mov rdi, [rax]` — you go to that location, grab what's there (another address) into `rdi`
-3. `mov rdi, [rdi]` — now follow *that* address to get the real secret
-4. `mov rax, 60` + `syscall` — exit with `rdi` as the exit code (which carries your secret)
+What happens:
+1. `rax` contains an address — follow it → get `address2`
+2. Follow `address2` → get the actual secret value
+3. Exit with that value in `rdi`
 
----
+```
+rax → [address2]
+address2 → [secret]
+```
 
-## About `mov rax, 60` + `syscall`
-
-This always appears at the end. It's **not** passing `60` as data — it means:
-
-> "Run system call number 60" → which is `exit()` on Linux.
-
-`rdi` is the exit code / value you pass out. `rax = 60` just tells the kernel *which* syscall to run. That's why you keep setting `rdi` to the secret — it comes out as the exit code.
+This is a **pointer-to-a-pointer** — one of the most common patterns in C and in memory exploitation.
 
 ---
 
 ## Quick Syntax Reference
 
-| Syntax             | Meaning                              |
-|--------------------|--------------------------------------|
-| `mov rax, 5`       | rax = 5 (plain value)                |
-| `mov rax, [5]`     | rax = value stored at address 5      |
-| `mov [rax], rbx`   | store rbx at the address rax holds   |
-| `lea rax, [rsp+8]` | rax = rsp+8 (the address, not value) |
-| `[rsp + rax*8]`    | address: rsp + (rax × 8)            |
+| Syntax | Meaning |
+|---|---|
+| `mov rax, 5` | rax = 5 |
+| `mov rax, [5]` | rax = value stored at address 5 |
+| `mov [rax], rbx` | store rbx's value at the address rax holds |
+| `lea rax, [rsp+8]` | rax = rsp+8 (the address, not the value there) |
+| `[rsp + rax*8]` | address = rsp + (rax × 8) |
+| `qword ptr [addr]` | explicit 64-bit read (needed in GAS with raw addresses) |
 
 ---
 
-## Key Registers
+## 🔐 Security Context — Why This Matters for Hacking
 
-| Register | Role                 |
-|----------|----------------------|
-| `rsp`    | Stack Pointer        |
-| `rip`    | Instruction Pointer  |
-| `rax`    | General / syscall #  |
-| `rdi`    | 1st argument / exit code |
-| `rbx`    | General purpose      |
-| `rcx`    | General purpose      |
+**Buffer overflows** happen when a program writes past the end of a buffer into adjacent memory. To exploit one, you need to know exactly what's at each memory address, how offsets work, and how to overwrite specific values — exactly what this file covers.
 
----
+**Pointer chains are everywhere in exploitation.** Real heap exploits (use-after-free, double-free) involve manipulating linked lists of pointers. When we free a chunk of memory and reallocate it, you're redirecting a pointer chain. The double-dereference pattern (example 6) is not a toy — it's literally how heap metadata works.
 
-## Intel vs AT&T Syntax Note
+**Understanding `[rsp + offset]` is how you read/overwrite return addresses.** The return address (where execution jumps after a function finishes) lives on the stack at a predictable offset from `rsp`. Knowing how to address memory with offsets is the mechanical skill behind stack smashing.
 
-In **GAS Intel syntax** (`.intel_syntax noprefix`), you sometimes need `qword ptr` to tell the assembler the size:
+**ASLR and PIE** (Position Independent Executables) randomize where code and data are loaded. Attackers bypass ASLR by leaking an address at runtime and computing offsets from it — which is exactly what `[rip + offset]` and pointer chain walking are for.
 
-```asm
-mov rdi, qword ptr [133700]
-```
-
-In **NASM**, the size is inferred automatically. Same logic, less typing. You're using GAS, so remember `qword ptr` when loading from a raw address.
+> **Connecting the dots:** Registers → Memory addressing (this file) → Stack layout (`The_Stack.md`) → Reading binaries (`Software_Introspection.md`) → Buffer overflows and heap exploitation.
 
 ---
 
-## Practice Checklist 🎯 (pwn.college — Computer Memory)
+## Practice Checklist
 
-- [ ] Load from hardcoded address
-- [ ] Load using `rax` as pointer
-- [ ] Load using `rdi` pointing to itself
-- [ ] Load with offset (`[rdi + 1]` etc.)
-- [ ] Follow a pointer chain (2 loads)
+- [ ] Load from a hardcoded address
+- [ ] Load using a register as the address (`[rax]`)
+- [ ] Load where register points to itself (`[rdi]` → back into `rdi`)
+- [ ] Load with byte offset (`[rdi + 8]`, `[rdi + 16]`)
+- [ ] Follow a 2-hop pointer chain
 - [ ] Double dereference (`rax` → address → address → secret)
-
----
-
->**Why this matters for security**:
-If you understand how pointers access memory, you can understand most serious bugs — like buffer overflows, use-after-free errors, and format string attacks.
-Every memory corruption problem is just reading or writing to the wrong memory address.
-
----
+- [ ] Use `lea` to get an address without dereferencing
