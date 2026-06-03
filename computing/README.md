@@ -1,1 +1,1 @@
-start from assembly language into and memory the stack
+start from assembly language into -> memory -> the stack -> Software Introspection
