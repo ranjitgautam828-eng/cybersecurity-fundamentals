@@ -1,1 +1,1 @@
-start from assembly language into and memory
+start from assembly language into and memory the stack
