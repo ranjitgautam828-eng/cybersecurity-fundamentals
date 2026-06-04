@@ -19,7 +19,7 @@ Low-level computing: how a CPU executes instructions, how memory is addressed, h
 | [Memory](./Memory.md) | Memory addressing, pointer chains, LEA, endianness, dereferencing | Buffer overflows, heap exploitation, ASLR bypass |
 | [The Stack](./The_Stack.md) | Stack layout, `rsp`, `argc`/`argv`, `pop`, stack offsets | Return address overwrite, ROP chains |
 | [Software Introspection](./Software_Introspection.md) | `objdump`, `strace`, GDB (starti, stepi, x/, print) | Reverse engineering, malware analysis, CTF pwn |
-
+| [Output_&_Input](./Output_&_Input.md) | write, read, open syscalls, FDs, null-terminated strings | Shellcode, fd hijacking, file read exploits |
 ---
 
 ## How to Read These Notes
