@@ -1,170 +1,152 @@
 # Output_&_Input
 
-> **Where this fits:** You know how to exit a program using a syscall. Now you'll use syscalls to actually *do* things — print text to the screen, read input, and open files. Everything here uses the same syscall pattern from `Assembly_Language_Intro.md`, just with different syscall numbers and more registers filled in.
+> **Where this fits:** We know syscalls now — exit was the first one. This section is about actually *doing stuff* with syscalls: printing to screen, reading input, opening files. Same pattern, just more registers to fill and more syscalls chained together.
 
 ---
 
 ## Table of Contents
 
-- [File Descriptors — the "where"](#file-descriptors--the-where)
-- [Writing Output — syscall 1](#writing-output--syscall-1)
-- [Writing Multiple Bytes](#writing-multiple-bytes)
-- [Chaining Syscalls — write then exit](#chaining-syscalls--write-then-exit)
+- [File Descriptors — what even is that](#file-descriptors--what-even-is-that)
+- [Writing to the Screen — syscall 1](#writing-to-the-screen--syscall-1)
+- [Writing More Than One Character](#writing-more-than-one-character)
+- [Chaining — write then exit](#chaining--write-then-exit)
 - [Reading Input — syscall 0](#reading-input--syscall-0)
-- [Opening Files — syscall 2](#opening-files--syscall-2)
-- [Hardcoding a Filename onto the Stack](#hardcoding-a-filename-onto-the-stack)
-- [Full Example — open, read, write](#full-example--open-read-write)
-- [Debugging Tips](#debugging-tips)
-- [Security Context](#-security-context--why-this-matters-for-hacking)
+- [Opening a File — syscall 2](#opening-a-file--syscall-2)
+- [Hardcoding the Filename on the Stack](#hardcoding-the-filename-on-the-stack)
+- [Full Program — open, read, write, exit](#full-program--open-read-write-exit)
+- [Debugging](#debugging)
+- [Security Context](#-security-context)
 - [Practice Checklist](#practice-checklist)
 
 ---
 
-## File Descriptors — the "where"
+## File Descriptors — what even is that
 
-Before writing or reading anything, you need to say *where* — to the screen? from the keyboard? from a file?
-
-Linux answers this with **File Descriptors (FDs)** — small integers that represent an open channel.
-
-Every process starts with three already open:
+Every process starts with three "channels" already open. Linux calls them **File Descriptors (FDs)** — just small integers that say *where* to read from or write to.
 
 | FD | Name | What it is |
 |---|---|---|
-| `0` | **stdin** | Input — keyboard, or piped-in data |
-| `1` | **stdout** | Normal output — what you see in the terminal |
-| `2` | **stderr** | Error output — error messages |
+| `0` | stdin | input — keyboard, or piped data |
+| `1` | stdout | normal output — what prints to your terminal |
+| `2` | stderr | error output |
 
-When you `open()` a file, Linux gives you back a new FD (usually starting at 3). You use that number the same way as 0, 1, or 2 — pass it to `read`/`write` as the first argument.
+When we open a file later, Linux gives us back a new number (3, 4, 5...). we use it exactly the same way.
 
-> **Connecting back:** FDs are just integers — you store them in registers and pass them as syscall arguments, exactly like exit codes. The concept is the same; just a different number with a different meaning.
+> **Connecting back:** FDs are just integers. We pass them in registers like any other number. Nothing special about them — just a convention Linux uses.
 
 ---
 
-## Writing Output — syscall 1
+## Writing to the Screen — syscall 1
 
-The `write` syscall prints data to a file descriptor. Its signature:
+`write` is syscall number 1. It needs three things:
 
 ```
 write(file_descriptor, memory_address, number_of_bytes)
 ```
 
-Three parameters → three registers (the Linux syscall calling convention):
+Which maps to registers like this:
 
-| Register | Parameter | What to put in it |
-|---|---|---|
-| `rax` | syscall number | `1` (write) |
-| `rdi` | file descriptor | `1` = stdout, `2` = stderr |
-| `rsi` | memory address | where your data starts in memory |
-| `rdx` | byte count | how many bytes to write |
-
-> **rdi vs rdx confusion:** These look almost identical. Remember: **rdi** = the **i**nitial (first) parameter. **rdx** = the e**x**tra (third) parameter. You'll mix these up — everyone does at first. Just slow down and double-check.
-
-### Example — write 1 byte from the stack to stdout
+| Register | What to put |
+|---|---|
+| `rax` | `1` — write syscall number |
+| `rdi` | file descriptor (`1` = stdout, `2` = stderr) |
+| `rsi` | address in memory where your data starts |
+| `rdx` | how many bytes to write |
 
 ```asm
-.intel_syntax noprefix
-.global _start
-_start:
-    mov rax, 1          ; syscall 1 = write
-    mov rdi, 1          ; fd 1 = stdout
-    mov rsi, [rsp+16]   ; address of data (argv[1] pointer from the stack)
-    mov rdx, 1          ; write 1 byte
-    syscall
+mov rax, 1          ; syscall 1 = write
+mov rdi, 1          ; fd 1 = stdout
+mov rsi, [rsp+16]   ; address of data to write
+mov rdx, 1          ; write 1 byte
+syscall
 ```
 
-> **Why not pass data in a register?** Registers only hold 8 bytes at most. A syscall that took data via register could only print 8 characters at a time — terrible for anything real. Instead, `write` takes a *pointer* to memory where your data lives, plus a length. The kernel reads directly from your memory. This is why `rsi` holds an **address**, not the actual text.
+> **Why not just put the text in a register?** Registers only hold 8 bytes. We can't fit a real string in one register. So instead, `rsi` holds a *pointer* — an address to where the data lives in memory — and `rdx` says how many bytes to read from there. The kernel goes and fetches it.
+
+> **Confusion clarified — rdi vs rdx:** These two look almost the same and it trips everyone up. **rdi** = first param (file descriptor). **rdx** = third param (byte count). Just remember: **i** = initial, **x** = extra. Or honestly just slow down and double check every time you write them.
 
 ---
 
-## Writing Multiple Bytes
+## Writing More Than One Character
 
-To write more than one character, just increase `rdx`:
+Same call, just change `rdx`:
 
 ```asm
 mov rax, 1
 mov rdi, 1
-mov rsi, [rsp+16]   ; address of data
-mov rdx, 13         ; write 13 bytes
+mov rsi, [rsp+16]
+mov rdx, 13         ; write 13 bytes instead of 1
 syscall
 ```
 
-The kernel reads `rdx` bytes starting from the address in `rsi`. That's it — same call, bigger count.
+That's it. The kernel reads `rdx` bytes starting from `rsi` and writes them all at once.
 
-> **Performance note:** Every syscall is expensive — the CPU has to stop your program, switch into kernel mode, do the work, then switch back. This is why `write` takes a length instead of making you call it once per character. Fewer syscalls = faster program.
+> **Why write multiple at once?** Every syscall costs the CPU — it has to stop our program, jump into the kernel, do the work, come back. That overhead adds up. Writing 100 bytes in one call is way faster than calling write 100 times with 1 byte each.
 
 ---
 
-## Chaining Syscalls — write then exit
+## Chaining — write then exit
 
-After writing, you still need to exit cleanly. Just put the exit syscall after:
+Goal: write something, then exit cleanly without crashing.
 
 ```asm
 .intel_syntax noprefix
 .global _start
 _start:
-    ; --- write ---
+    ; write
     mov rax, 1
     mov rdi, 1
     mov rsi, [rsp+16]
     mov rdx, 1
     syscall
 
-    ; --- exit ---
+    ; exit
     mov rax, 60
-    mov rdi, 0          ; exit code 0 = success
+    mov rdi, 0
     syscall
 ```
 
-> **Order matters.** The CPU runs instructions top to bottom. If you put exit before write, the program ends before printing anything. Always think: what has to happen first?
+> **Order matters.** CPU runs top to bottom. Put exit before write and the program ends before printing anything. Always think: what needs to happen first?
 
 ---
 
 ## Reading Input — syscall 0
 
-`read` is the mirror of `write`. Same structure, syscall number 0:
+`read` is syscall 0. Mirror of write — same structure, different direction.
 
 ```
-read(file_descriptor, memory_address, max_bytes_to_read)
+read(file_descriptor, memory_address, max_bytes)
 ```
-
-| Register | Value | Meaning |
-|---|---|---|
-| `rax` | `0` | syscall 0 = read |
-| `rdi` | `0` | fd 0 = stdin |
-| `rsi` | address | where in memory to store the input |
-| `rdx` | `64` | read up to 64 bytes |
 
 ```asm
-mov rax, 0
-mov rdi, 0          ; read from stdin
-mov rsi, rsp        ; store data at the top of the stack
+mov rax, 0          ; syscall 0 = read
+mov rdi, 0          ; fd 0 = stdin
+mov rsi, rsp        ; store the input here (top of stack)
 mov rdx, 64         ; read up to 64 bytes
 syscall
 ```
 
-After this syscall, the bytes the user typed are now sitting in memory starting at `rsp`. You can then pass that same address to `write` to echo them back.
+After this, whatever you typed is sitting in memory at `rsp`. We can then pass that same address to `write` to print it back out.
 
-### What the memory looks like after reading "HELLO"
+### What memory looks like after reading "HELLO"
 
 ```
-Address       │ Value (hex) │ ASCII
-──────────────┼─────────────┼──────
-rsp + 0       │ 0x48        │ H
-rsp + 1       │ 0x45        │ E
-rsp + 2       │ 0x4c        │ L
-rsp + 3       │ 0x4c        │ L
-rsp + 4       │ 0x4f        │ O
+rsp + 0  →  0x48  ('H')
+rsp + 1  →  0x45  ('E')
+rsp + 2  →  0x4c  ('L')
+rsp + 3  →  0x4c  ('L')
+rsp + 4  →  0x4f  ('O')
 ```
 
-Characters are stored as their ASCII values — just numbers. `'H'` = `0x48` = `72` in decimal. Same byte, three different ways to write it.
+Characters are stored as their ASCII values — just numbers. `'H'` = `0x48`. Same byte, different ways to write it.
 
-> **Confusion clarified:** When reading, `rdi` = `0` (stdin), not `1`. It's easy to write `mov rdi, 1` by habit from write. Always check: am I reading (fd 0) or writing (fd 1)?
+> **Confusion clarified:** When reading, `rdi` = `0` (stdin), not `1`. Super easy to write `mov rdi, 1` out of habit from write. I did this. Just check: reading from stdin = fd 0, writing to stdout = fd 1.
 
 ---
 
-## Opening Files — syscall 2
+## Opening a File — syscall 2
 
-stdin, stdout, stderr are always open. But to read a file from disk, you need to open it first. That's `open`:
+stdin/stdout/stderr are always open. To read a file from disk, we have to open it first.
 
 ```
 open(filename_pointer, flags)
@@ -174,32 +156,32 @@ open(filename_pointer, flags)
 |---|---|---|
 | `rax` | `2` | syscall 2 = open |
 | `rdi` | address | pointer to the filename string in memory |
-| `rsi` | `0` | flags: `0` = read-only |
+| `rsi` | `0` | 0 = read-only |
 
 ```asm
 mov rax, 2
-mov rdi, [rsp+16]   ; pointer to filename (e.g. argv[1] = "/flag")
+mov rdi, [rsp+16]   ; pointer to filename string (e.g. argv[1])
 mov rsi, 0          ; read-only
 syscall
-; rax now holds the new file descriptor (e.g. 3)
+; rax now = the new file descriptor (e.g. 3)
 ```
 
-**Critical:** after `open` returns, `rax` holds the new FD. You must save it before you overwrite `rax` with the next syscall number:
+**The important part:** after `open` returns, `rax` holds the new fd. We have to save it *before* we put the next syscall number in `rax`, otherwise you lose it:
 
 ```asm
-syscall             ; open() — rax = new fd (e.g. 3)
-mov rdi, rax        ; save the fd into rdi NOW, before you lose it
+syscall             ; open — rax = new fd
+mov rdi, rax        ; save it NOW before overwriting rax
 ```
 
-If you forget this and immediately do `mov rax, 0` for read, you've lost the fd and can't read the file.
+Forget this and your read call uses a garbage fd and nothing works.
 
-> **Connecting back:** The fd returned by `open` is just an integer — same as the hardcoded `0`, `1`, `2` you already know. The only difference is that `open` creates it dynamically and hands it to you in `rax`.
+> **Connecting back:** The fd open gives you is just an integer — same as the 0, 1, 2 you already know. open just creates a new one dynamically and hands it back in rax.
 
 ---
 
-## Hardcoding a Filename onto the Stack
+## Hardcoding the Filename on the Stack
 
-Sometimes the filename isn't passed as an argument — you need to write it directly into memory yourself. The "hacker" way: build the string byte by byte on the stack.
+Sometimes the filename isn't passed as an argument — we need to write it into memory yourself, byte by byte. This is the "hacker" way from pwn.college, designed for exploitation not normal software dev.
 
 ```asm
 mov BYTE PTR [rsp],   '/'
@@ -207,21 +189,21 @@ mov BYTE PTR [rsp+1], 'f'
 mov BYTE PTR [rsp+2], 'l'
 mov BYTE PTR [rsp+3], 'a'
 mov BYTE PTR [rsp+4], 'g'
-mov BYTE PTR [rsp+5], 0     ; null terminator — marks end of string
+mov BYTE PTR [rsp+5], 0     ; null terminator
 ```
 
-Three things to understand here:
+Three things to know:
 
-**`BYTE PTR`** — a size directive. Tells the assembler: write exactly 1 byte here. Without it, the assembler doesn't know if you mean 1, 2, 4, or 8 bytes.
+**`BYTE PTR`** — size directive. Tells the assembler: write exactly 1 byte here. Without it the assembler doesn't know if you mean 1, 2, 4 or 8 bytes.
 
-**Single quotes** — `'f'` is just a readable way to write the ASCII value of `f`, which is `0x66`. The assembler converts it. Same thing.
+**Single quotes** — `'f'` is just a readable way to write the ASCII value of f, which is `0x66`. Same thing, just easier to read.
 
-**The null byte (`0`)** — Linux reads a string by starting at the pointer and stopping at the first `0` byte. This is called a **null-terminated string**. Without it, `open` would keep reading past "flag" into whatever garbage is next on the stack and try to open a file with a nonsense name.
+**The null byte (0)** — Linux reads a string starting at your pointer and stops when it hits a `0` byte. Without it, `open` keeps reading past "flag" into whatever else is on the stack and tries to open a file with a garbage name. Always end your string with `0`.
 
-After writing the bytes, pass `rsp` (the start of your string) to `open` via `rdi`:
+Then pass `rsp` to `open` as the filename pointer:
 
 ```asm
-mov rdi, rsp        ; rdi = pointer to "/flag\0" we just wrote
+mov rdi, rsp        ; rdi = pointer to "/flag" we just wrote
 mov rax, 2
 mov rsi, 0
 syscall
@@ -229,16 +211,16 @@ syscall
 
 ---
 
-## Full Example — open, read, write
+## Full Program — open, read, write, exit
 
-This is the complete pattern for reading a file and printing its contents. The order of syscalls matters — each one feeds into the next.
+This is the complete flow. Each syscall feeds into the next — the fd from open goes into read, the memory from read goes into write.
 
 ```asm
 .intel_syntax noprefix
 .global _start
 
 _start:
-    ; Step 1: write "/flag\0" onto the stack
+    ; Step 1 — build "/flag\0" on the stack
     mov BYTE PTR [rsp],   '/'
     mov BYTE PTR [rsp+1], 'f'
     mov BYTE PTR [rsp+2], 'l'
@@ -246,96 +228,92 @@ _start:
     mov BYTE PTR [rsp+4], 'g'
     mov BYTE PTR [rsp+5], 0
 
-    ; Step 2: open("/flag", 0) → fd in rax
-    mov rdi, rsp        ; pointer to our "/flag" string
+    ; Step 2 — open("/flag", 0) → fd comes back in rax
+    mov rdi, rsp
     mov rax, 2
     mov rsi, 0
     syscall
 
-    ; Step 3: save the fd, then read from the file
-    mov rdi, rax        ; save fd (e.g. 3) before overwriting rax
-    mov rax, 0          ; syscall 0 = read
-    mov rsi, rsp        ; store file contents at rsp (overwrites the filename — that's fine)
-    mov rdx, 64         ; read up to 64 bytes
-    syscall
-
-    ; Step 4: write the contents to stdout
-    mov rax, 1
-    mov rdi, 1          ; stdout
-    mov rsi, rsp        ; same address — contents are here now
+    ; Step 3 — save the fd, then read from the file into rsp
+    mov rdi, rax        ; save fd before overwriting rax
+    mov rax, 0
+    mov rsi, rsp        ; store file contents here (overwrites "/flag" — fine)
     mov rdx, 64
     syscall
 
-    ; Step 5: exit cleanly
+    ; Step 4 — write contents to stdout
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, rsp
+    mov rdx, 64
+    syscall
+
+    ; Step 5 — exit
     mov rax, 60
     mov rdi, 0
     syscall
 ```
 
-### The data flow, step by step
+### What's happening to memory at rsp
 
 ```
-Stack memory (rsp)
-  → we write "/flag\0" here           (Step 1)
-  → open() reads it, returns fd=3     (Step 2)
-  → read() fills rsp with file data   (Step 3) ← overwrites "/flag", that's fine
-  → write() prints from rsp           (Step 4)
-  → exit                              (Step 5)
+After Step 1:   rsp → "/flag\0"
+After Step 3:   rsp → file contents (overwrites the filename — that's fine, we're done with it)
+Step 4 reads:   rsp → same address, now prints the file contents
 ```
 
-> **Personal note:** Make sure your terminal is connected to the right machine when running these. It happened to me that I was connected to a different device and the challenge wasn't working — the machine running the code was somewhere else entirely.
+> **Personal note:** Double check which terminal is connected to which machine when running these. I had a case where I was solving the challenge but connected to a different device — the program was running somewhere else and nothing made sense. If it's not working, check your SSH session first.
 
 ---
 
-## Debugging Tips
+## Debugging
 
-**`strace` first.** If something's wrong, run `strace ./your_binary` and read what each syscall got as arguments and returned. If `open` returns `-1`, your string pointer or encoding is wrong.
+**strace first.** Run `strace ./your_binary` and look at what arguments each syscall got and what it returned. If `open` returns `-1`, our string pointer or null terminator is wrong.
 
 ```bash
 strace ./p
 ```
 
-**Check your string in GDB.** If `open` is failing, pause at that instruction and inspect what string is actually at `rsp`:
+**Check your string in GDB.** Step through until after we've written the filename bytes, then inspect what's actually at rsp:
 
 ```bash
 gdb ./p
 (gdb) starti
-(gdb) stepi     # step through until after you've written the filename bytes
-(gdb) x/s $rsp  # print the string at rsp — does it show "/flag"?
+(gdb) stepi   # repeat until past the BYTE PTR writes
+(gdb) x/s $rsp
+# should show: "/flag"
 ```
 
-**Common mistakes:**
+**Common mistakes I hit:**
 
-| Mistake | Symptom | Fix |
+| Mistake | What goes wrong | Fix |
 |---|---|---|
-| Forgot null terminator | `open` returns -1, strange filename | Add `mov BYTE PTR [rsp+5], 0` |
-| Used `rdi=1` for read | Reading from stdout instead of stdin | Read uses `rdi=0` |
-| Overwrote `rax` before saving fd | `read` uses wrong fd | `mov rdi, rax` immediately after `open` syscall |
-| Wrong terminal/machine | Challenge never works | Check which SSH session you're in |
+| Forgot null terminator | `open` returns -1, garbage filename | `mov BYTE PTR [rsp+5], 0` |
+| `rdi=1` for read | reading from stdout instead of stdin | read uses `rdi=0` |
+| Didn't save fd before next `mov rax` | read uses garbage fd | `mov rdi, rax` right after open syscall |
+| Connected to wrong terminal | nothing works, no idea why | check your SSH session |
 
 ---
 
-## 🔐 Security Context — Why This Matters for Hacking
+## 🔐 Security Context
 
-**This is the exact pattern used in shellcode.** Real shellcode for privilege escalation often does exactly this sequence: open `/etc/shadow` or `/flag`, read its contents into a buffer on the stack, write them to stdout (or over a socket). You just built that from scratch.
+**This is literally shellcode.** The open→read→write pattern is exactly what shellcode does to read `/etc/shadow`, `/flag`, or any sensitive file. You just built it from scratch in assembly. That's not an exercise — that's the real thing.
 
-**File descriptor hijacking** is a real attack. If a privileged process opens a sensitive file and you can manipulate which fd number it uses — or if it inherits your open fd — you can read data you shouldn't have access to. Understanding what fds are and how `open` assigns them is the foundation.
+**Null termination bugs are a vulnerability class.** Programs that build strings in memory without the null byte can leak data past the string boundary. You felt firsthand why the null byte matters — now you understand the bug when you see it in a CTF.
 
-**Understanding syscall arguments is how you read exploits.** When you see a shellcode payload in a CTF writeup or CVE, it's often a sequence of `mov` instructions setting up `rax`, `rdi`, `rsi`, `rdx` for exactly these syscalls. You can now read those directly.
+**Every syscall argument is inspectable.** `strace` shows you what any binary passes to any syscall — fd numbers, memory addresses, byte counts. Malware has to make syscalls to do anything real. `strace` catches all of it.
 
-**Null termination bugs are a real vulnerability class.** If a program builds a string in memory and forgets the null byte, `open`/`read`/`write` will read past the intended boundary into adjacent memory — potentially leaking secrets or crashing. You just felt firsthand why the null byte matters.
-
-> **Connecting the dots:** Registers + syscalls (`Assembly_Language_Intro.md`) → memory addressing to pass pointers (`Memory.md`) → stack as scratch space to store strings (`The_Stack.md`) → introspection to debug when it breaks (`Software_Introspection.md`) → **this file**: putting it all together to read files, print output, and chain syscalls. This is the first complete, useful program you've built.
+> **Connecting the dots:** All four previous files come together here for the first time — registers and syscalls (`Assembly_Language_Intro.md`) + memory addressing for pointers (`Memory.md`) + stack as scratch space (`The_Stack.md`) + strace/GDB to debug it (`Software_Introspection.md`). This is the first program that actually *does something*.
 
 ---
 
 ## Practice Checklist
 
-- [ ] Write 1 byte to stdout using syscall 1
-- [ ] Write multiple bytes to stdout (change `rdx`)
-- [ ] Chain write + exit without crashing
-- [ ] Read from stdin into the stack, then write it back out (echo program)
-- [ ] Open a file passed as `argv[1]`, read it, print contents
-- [ ] Hardcode `/flag` byte by byte onto the stack with null terminator
-- [ ] Use `strace` to verify your syscall arguments are correct
-- [ ] Use `x/s $rsp` in GDB to verify your string is correctly built
+- [ ] Write 1 byte to stdout
+- [ ] Write multiple bytes (change rdx)
+- [ ] Chain write + exit cleanly
+- [ ] Read from stdin into stack, then echo it back with write
+- [ ] Open a file from argv[1], read contents, print them
+- [ ] Hardcode `/flag` byte by byte onto the stack
+- [ ] Verify your string with `x/s $rsp` in GDB
+- [ ] Use strace to confirm each syscall got the right arguments
