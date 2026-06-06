@@ -1,74 +1,97 @@
 # Computing Fundamentals
 
-> Notes built from pwn.college's Computer Architecture & Assembly module -> Computing 101.  
-> Everything here is hands-on — written while actually doing the challenges, not before.
+> Notes built hands-on while doing pwn.college — Computer Architecture & Assembly → Computing 101.  
+> Written while actually doing the challenges, not before.
 
 ---
 
 ## What This Section Covers
 
-Low-level computing: how a CPU executes instructions, how memory is addressed, how the stack is laid out, and how to read and trace compiled binaries. This is the foundation that every higher-level security concept (buffer overflows, shellcode, ROP, heap exploitation) is built on.
+Low-level computing: how a CPU executes instructions, how memory is addressed, how the stack is laid out, how numbers are encoded, and how to read and trace compiled binaries. This is the foundation that every higher-level security concept — buffer overflows, shellcode, ROP, heap exploitation — is built on.
 
 ---
 
 ## Topics
 
-| File | What it covers | Security relevance |
-|---|---|---|
-| [Assembly Language Intro](./Assembly_Language_Intro.md) | CPU registers, Intel syntax, syscalls, build pipeline (`as` → `ld`) | Shellcode, reading exploits, understanding CVEs |
-| [Memory](./Memory.md) | Memory addressing, pointer chains, LEA, endianness, dereferencing | Buffer overflows, heap exploitation, ASLR bypass |
-| [The Stack](./The_Stack.md) | Stack layout, `rsp`, `argc`/`argv`, `pop`, stack offsets | Return address overwrite, ROP chains |
-| [Software Introspection](./Software_Introspection.md) | `objdump`, `strace`, GDB (starti, stepi, x/, print) | Reverse engineering, malware analysis, CTF pwn |
-| [Output_&_Input](./Output_&_Input.md) | write, read, open syscalls, FDs, null-terminated strings | Shellcode, fd hijacking, file read exploits |
+Read in order. Each file builds directly on the one before it.
+
+| # | File | What it covers | Security relevance |
+|---|---|---|---|
+| 1 | [Assembly Language Intro](./Assembly_Language_Intro.md) | CPU registers, Intel syntax, syscalls, build pipeline (`as` → `ld`) | Shellcode, reading exploits, understanding CVEs |
+| 2 | [Memory](./Memory.md) | Memory addressing, pointer chains, LEA, endianness, dereferencing | Buffer overflows, heap exploitation, ASLR bypass |
+| 3 | [The Stack](./The_Stack.md) | Stack layout, `rsp`, `argc`/`argv`, `pop`, stack offsets | Return address overwrite, ROP chains |
+| 4 | [Nibbling on Numbers](./Nibbling_on_Numbers.md) | Binary, unsigned/signed decimal, two's complement, hex conversion | Reading GDB output, memory dumps, objdump values |
+| 5 | [Software Introspection](./Software_Introspection.md) | `objdump`, `strace`, GDB (`starti`, `stepi`, `x/`, `print`) | Reverse engineering, malware analysis, CTF pwn |
+| 6 | [File Descriptors & I/O](./File_Descriptors_IO.md) | `write`, `read`, `open` syscalls, FDs, null-terminated strings | Shellcode, fd hijacking, file read exploits |
+| 7 | [Control Flow](./Control_Flow.md) | `cmp`, flags, `jne`, labels, jump tables, loops | Password bypasses, timing attacks, ROP, control flow hijacking |
+
 ---
 
-## How to Read These Notes
-
-They're designed to be read **in order** — each file builds on the last:
+## The Learning Path
 
 ```
-Assembly Language Intro
+Assembly Language Intro    ← vocabulary: registers, syscalls, build pipeline
         ↓
-      Memory
+      Memory               ← reach into RAM: addressing, pointers, dereferencing
         ↓
-    The Stack
+    The Stack              ← program launch layout: argc, argv, rsp offsets
         ↓
-Software Introspection
+Nibbling on Numbers        ← read raw values: binary, hex, signed/unsigned
+        ↓
+Software Introspection     ← read any binary: objdump, strace, GDB
+        ↓
+  File Descriptors & I/O   ← do real things: write, read, open files
+        ↓
+    Control Flow           ← make decisions: cmp, jumps, loops
         ↓
     (coming next)
 ```
 
-Each file has:
-- A **"Where this fits"** header — how it connects to the others
-- **Worked examples** with real bash/assembly code you can run
-- **"Confusion clarified"** callouts for things that tripped me up
-- A **Security Context** section — why this matters for actual hacking
-- A **Practice Checklist** — pwn.college challenges for that topic
+Each topic uses the vocabulary of every topic above it. By Control Flow, all seven are in play at once.
 
 ---
 
-## Skills Demonstrated
+## What Each File Contains
 
-Working through this module builds:
+Every file follows the same structure so they're easy to use for revision:
 
-- x86-64 assembly (Intel syntax, GAS assembler)
-- Linux syscall ABI (syscall numbers, register convention)
-- Memory addressing modes (direct, register-indirect, offset, pointer chains)
-- Stack mechanics (layout at program entry, `push`/`pop`, `rsp` offsets)
-- Binary analysis tools: `objdump`, `strace`, GDB
+- **"Where this fits"** — how it connects to the other files
+- **Worked examples** — real assembly and bash you can run
+- **"Confusion clarified"** callouts — things that actually tripped me up
+- **Security Context** — why this matters for real hacking
+- **Practice Checklist** — pwn.college challenges for that topic
+
+---
+
+## Skills Built
+
+| Skill | Files |
+|---|---|
+| x86-64 assembly, Intel syntax, GAS | 1, 2, 3, 6, 7 |
+| Linux syscall ABI (numbers, register convention) | 1, 6 |
+| Memory addressing (direct, indirect, offset, pointer chains) | 2, 3 |
+| Stack mechanics (`push`/`pop`, `rsp`, program entry layout) | 3 |
+| Number systems (binary, hex, signed/unsigned, two's complement) | 4 |
+| Binary analysis tools (`objdump`, `strace`, GDB) | 5 |
+| File I/O in assembly (write, read, open, FDs) | 6 |
+| Control flow (compare, conditional jumps, loops, jump tables) | 7 |
 
 ---
 
 ## Coming Next
 
-As I progress through pwn.college, this section will grow. Planned additions:
+As I progress through pwn.college, this section grows:
 
-- [ ] coming soon
+- [ ] Processes & File Descriptors (deeper)
+- [ ] Shellcode
+- [ ] Sandboxing (seccomp)
+- [ ] Memory Errors (buffer overflows)
+- [ ] ROP (Return-Oriented Programming)
 
 ---
 
 ## Source
 
-All challenges from [pwn.college](https://pwn.college) — Computer Architecture module.  
+Challenges from [pwn.college](https://pwn.college) — Computer Architecture & Assembly + Computing 101 modules.  
 Personal lab: Kali Linux.  
 See the [root README](../README.md) for the full repo overview.
