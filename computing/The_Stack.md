@@ -263,3 +263,6 @@ rsp → [argv[0] ptr]   [rsp]        ← rsp advanced
 - [ ] Read `argv[1]` at `[rsp+16]` and dereference it
 - [ ] Run with different numbers of arguments, verify argc changes
 - [ ] Trace `rsp` value before and after a `pop` in GDB
+
+
+Part 2 compe after we are done with other other section from 1- 7. As it contain advance topics:
