@@ -24,6 +24,7 @@ Read in order. Each file builds directly on the one before it.
 | 5 | [Software Introspection](./Software_Introspection.md) | `objdump`, `strace`, GDB (`starti`, `stepi`, `x/`, `print`) | Reverse engineering, malware analysis, CTF pwn |
 | 6 | [File Descriptors & I/O](./File_Descriptors_IO.md) | `write`, `read`, `open` syscalls, FDs, null-terminated strings | Shellcode, fd hijacking, file read exploits |
 | 7 | [Control Flow](./Control_Flow.md) | `cmp`, flags, `jne`, labels, jump tables, loops | Password bypasses, timing attacks, ROP, control flow hijacking |
+| 8 | [Assembly Assortment](./Assembly_Assortment.md) | Reverse calculation (add, sub, XOR), `.rodata` string extraction | Hardcoded password cracking, XOR obfuscation, binary reversing |
 
 ---
 
