@@ -266,3 +266,10 @@ rsp → [argv[0] ptr]   [rsp]        ← rsp advanced
 
 
 Part 2 compe after we are done with other other section from 1- 7. As it contain advance topics:
+we now know the basic so lets delve onto advance topicsHow does it actually get laid out? Why does it "grow downwards," and what does that mean for the data you can reach? And how does the way your program was launched shape the addresses of everything on it?
+
+Rwaching into the callers Frame
+In addition to storing scratch data and return addresses, the stack stores the local variables of functions: data they use for functionality that's not necessarily needed by other functions of a program. In security situations where a hacker gets ``code execution'' inside a process, these variables are an open book: there is nothing preventing code in a process from reading data from all over the stack!
+
+Chqallenge:
+
