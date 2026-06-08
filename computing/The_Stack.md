@@ -264,6 +264,7 @@ rsp → [argv[0] ptr]   [rsp]        ← rsp advanced
 - [ ] Run with different numbers of arguments, verify argc changes
 - [ ] Trace `rsp` value before and after a `pop` in GDB
 
+Working
 
 Part 2 compe after we are done with other other section from 1- 7. As it contain advance topics:
 we now know the basic so lets delve onto advance topicsHow does it actually get laid out? Why does it "grow downwards," and what does that mean for the data you can reach? And how does the way your program was launched shape the addresses of everything on it?
