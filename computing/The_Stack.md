@@ -268,8 +268,70 @@ rsp → [argv[0] ptr]   [rsp]        ← rsp advanced
 Part 2 compe after we are done with other other section from 1- 7. As it contain advance topics:
 we now know the basic so lets delve onto advance topicsHow does it actually get laid out? Why does it "grow downwards," and what does that mean for the data you can reach? And how does the way your program was launched shape the addresses of everything on it?
 
-Rwaching into the callers Frame
+Rwaching into the callers Frame- mostly about accessoing lower stack memory in the cjallenge
 In addition to storing scratch data and return addresses, the stack stores the local variables of functions: data they use for functionality that's not necessarily needed by other functions of a program. In security situations where a hacker gets ``code execution'' inside a process, these variables are an open book: there is nothing preventing code in a process from reading data from all over the stack!
+Imagine the stack as a pile of sticky notes. When one function calls another, it writes a "return address" on a new note and puts it on top of the pile. Then the called function can add its own notes (local variables) on top.
 
+But in this challenge, your solve function has no arguments—it's just called. The caller function, before calling you, stored the secret flag in its own local variables (like its own sticky notes). Those notes are still on the stack, just below where your function starts (at higher memory addresses).
+
+Because the stack is just one big block of memory, and your code can read anywhere in that block (there's no protection stopping you), you can simply look down from where you are (positive offsets from rsp) and find the flag. You don't need to be passed anything—you just reach into the caller's "frame" and grab the bytes.
+
+Key points to remember:
+
+The stack grows downward (toward smaller addresses) when you push. So a "higher" address means older data.
+
+When solve starts, rsp points to the return address (8 bytes). The caller's locals start right after that.
+
+By reading memory at [rsp + 0x40] (for example), you can directly read the flag that the caller left behind.
+
+That's the vulnerability: any code running in a process can read the entire stack—nothing hides local variables from other functions on the same stack.
 Chqallenge:
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ nano solve.s
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ as -o solve.o sol
+ve.s
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ ld -shared -o sol
+ve.so solve.o
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ /challenge/checksolve| solve.s
+bash: /challenge/checksolve: No such file or directory
+bash: solve.s: command not found
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ /challenge/check solve.s
+Check failed:
 
+Expected an ELF 64-bit shared object, but solve.s is:
+  ASCII text
+
+Build your library like this:
+    as --64 your-solve.s -o your-solve.o
+    ld -shared your-solve.o -o your-solve.so
+
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ /challenge/check solve
+Check failed:
+
+File solve not found.
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ /challenge/check solve.so
+
+Let's see if your solve reads the flag out of the caller's frame and writes it 
+to stdout...
+
+hacker@the-stack-revisited~reaching-into-the-callers-frame:/home/hacker$ /challenge/harness /tmp/your-program.so
+
+[harness] loading shared library /tmp/your-program.so ...
+[harness] resolving `solve` symbol ...
+[harness] found solve at 0x74c847b22000
+[harness] reading 128 bytes of flag from stdin ...
+[harness] calling caller(solve, flag_buf) --- caller stashes the flag in its local frame at [rsp+0x40] (from solve's view) and then calls into your solve
+[harness] your `solve` should `write` 128 bytes from [rsp+0x40] to stdout:
+pwn.college{wofDtHcFWzOwF1y2wUQi01PrUi4.0FO1kDNywyM2cTM3EzW}====[harness] caller() returned. (If your write was correct, the flag printed above.)
+
+If your solve is right, the flag is printed above!
+ubuntu@the-stack-revisited~reaching-into-the-callers-frame:~$ cat solve.s
+.intel_syntax noprefix
+.global solve
+solve:
+ mov rsi, rsp
+ add rsi, 0x40
+ mov rax, 1
+ mov rdi, 1
+ mov rdx, 0x40
+ syscall
+ ret
