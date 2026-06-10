@@ -1,6 +1,6 @@
 # The Stack — Part 2
 
-> **Where this fits:** This comes after you've finished sections 1–7. You already know rsp, argc, argv, pop, and push. Part 2 goes deeper — how the stack looks across function calls, how to read data that belongs to other functions, and how environment variables live on the stack and affect memory addresses.
+> **Where this fits:** This comes after I've finished sections 1–7. I already know rsp, argc, argv, pop, and push. Part 2 is where I go deeper — how the stack looks across function calls, how I can read data that belongs to other functions, and how environment variables live on the stack and affect memory addresses.
 
 ---
 
@@ -11,14 +11,14 @@
 - [Environment Variables on the Stack](#environment-variables-on-the-stack)
 - [Stack Alignment via Environment](#stack-alignment-via-environment)
 - [Aligning the Stack through GDB](#aligning-the-stack-through-gdb)
-- [Security Context](#-security-context)
+- [Security Context](#security-context)
 - [Practice Checklist](#practice-checklist)
 
 ---
 
 ## Stack Layout Across Function Calls
 
-You know the stack grows downward. Here's what it looks like when one function calls another:
+I already know the stack grows downward. Now I visualize what happens when one function calls another:
 
 ```
 High addresses (older data)
@@ -32,19 +32,20 @@ High addresses (older data)
 Low addresses
 ```
 
-When your `solve` starts:
+
+When my `solve` starts:
 - `[rsp]` = return address (8 bytes, pushed by `call`)
 - `[rsp + 8]` and above = the caller's data, still sitting there
 
-The caller's frame doesn't disappear. It's still in memory at higher addresses — you can read it.
+The caller's frame doesn't disappear. It's still in memory above me — I can read it.
 
 ---
 
 ## Reaching into the Caller's Frame
 
-**The key insight:** there is no protection stopping your code from reading anywhere on the stack. Local variables from the caller, return addresses, anything — all just memory at predictable offsets from `rsp`.
+The key thing I realized: nothing stops me from reading anywhere on the stack. The caller's local variables, return address, everything is just memory at fixed offsets from `rsp`.
 
-In the challenge, the caller stores the flag in its own local variables before calling `solve`. From `solve`'s view, it's at `[rsp + 0x40]`.
+In the challenge, the caller stores the flag in its own local variables before calling `solve`. From my `solve`, I find it here:
 
 ```
 [rsp]        = return address
@@ -53,22 +54,23 @@ In the challenge, the caller stores the flag in its own local variables before c
 [rsp + 0x40] = where caller stashed the flag
 ```
 
-### Solution
+### My solution
 
 ```asm
 .intel_syntax noprefix
 .global solve
 solve:
-    mov rsi, rsp        ; start at rsp
-    add rsi, 0x40       ; advance to where the flag is
-    mov rax, 1          ; write syscall
-    mov rdi, 1          ; stdout
-    mov rdx, 0x40       ; 128 bytes
+    mov rsi, rsp
+    add rsi, 0x40
+    mov rax, 1
+    mov rdi, 1
+    mov rdx, 0x40
     syscall
     ret
+
 ```
 
-> `add rsi, 0x40` gives you the **address** of the flag — which is what `write` needs as a pointer. Don't dereference it.
+> I don't dereference rsi — I pass it as a pointer to write.
 
 ### Build and run
 
@@ -82,6 +84,100 @@ ld -shared -o solve.so solve.o
 - Passed `solve.s` to checker — that's source text, not a compiled library
 - Passed `solve` with no extension — file not found
 - Fix: always build first, pass the `.so`
+
+---
+
+Building your own frame
+Using the Stack for Extra Space
+The main point:
+
+Whenever I run out of registers, I use the stack as scratch space:
+
+The pattern I must remember:
+
+asm
+sub rsp, N      # I reserve space
+...             # I use [rsp .. rsp+N]
+add rsp, N      # I restore it
+ret
+
+Golden rule I follow: Whatever I subtract from rsp, I always add back before ret.
+
+Why?
+
+ret expects the stack pointer to be where it started
+
+If it's not, my program crashes
+
+What I need to know about stack memory:
+
+It's NOT zeroed — old garbage lives there
+
+I must clear it myself before using it
+
+What I just learned:
+
+This is how functions create local "arrays" when registers aren't enough
+
+256 bytes for tracking byte values → stack frame
+
+Don't forget:
+
+Borrow space
+
+Clear it
+
+Use it
+
+Give it back
+
+Return
+
+code:
+.intel_syntax noprefix
+.globl solve
+
+solve:
+    sub rsp, 256               # reserve 256 bytes for tally array
+
+    mov ecx, 0                 # initialize index
+init_loop:
+    cmp ecx, 256               # loop through all 256 slots
+    je init_done
+    mov byte ptr [rsp + rcx], 0 # clear each slot
+    inc ecx
+    jmp init_loop
+init_done:
+
+    mov ecx, 0                 # reset index for buffer
+mark_loop:
+    cmp rcx, rsi               # check if we've processed all bytes
+    je mark_done
+    movzx eax, byte ptr [rdi + rcx] # get byte from buffer
+    mov byte ptr [rsp + rax], 1     # mark that byte value as seen
+    inc ecx
+    jmp mark_loop
+mark_done:
+
+    mov eax, 0                 # eax will hold distinct count
+    mov ecx, 0                 # index for tally array
+count_loop:
+    cmp ecx, 256               # loop through all 256 possible values
+    je count_done
+    cmp byte ptr [rsp + rcx], 1 # check if this byte was seen
+    jne not_present
+    inc eax                    # count it if seen
+not_present:
+    inc ecx
+    jmp count_loop
+count_done:
+count_done:
+count_done:
+count_done:
+
+    add rsp, 256               # restore stack pointer
+    ret
+
 
 ---
 
