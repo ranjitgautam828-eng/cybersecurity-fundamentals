@@ -1,6 +1,6 @@
 # Computing Fundamentals
 
-> Notes built hands-on while doing pwn.college — Computer Architecture & Assembly → Computing 101.  
+> Notes built hands-on while doing pwn.college — Computer Architecture & Assembly → Computing 101. 
 > Written while actually doing the challenges, not before.
 
 ---
@@ -24,8 +24,9 @@ Read in order. Each file builds directly on the one before it.
 | 5 | [Software Introspection](./Software_Introspection.md) | `objdump`, `strace`, GDB (`starti`, `stepi`, `x/`, `print`) | Reverse engineering, malware analysis, CTF pwn |
 | 6 | [File Descriptors & I/O](./File_Descriptors_IO.md) | `write`, `read`, `open` syscalls, FDs, null-terminated strings | Shellcode, fd hijacking, file read exploits |
 | 7 | [Control Flow](./Control_Flow.md) | `cmp`, flags, `jne`, labels, jump tables, loops | Password bypasses, timing attacks, ROP, control flow hijacking |
-| 8 | [Assembly Assortment](./Assembly_Assortment.md) | Reverse calculation (add, sub, XOR), `.rodata` string extraction | Hardcoded password cracking, XOR obfuscation, binary reversing |
-| 9 | [The Stack — Part 2](./The_Stack_Part2.md) | Caller frames, envp layout, stack alignment via env vars | Stack reading, canary bypass intuition, GDB vs shell addresses |
+| 8 | [Endian Escapades](./Endian_Escapades.md) | Little-endian storage, byte ordering, structs, decoding values from memory | Memory analysis, reverse engineering, exploit development |
+| 9 | [Assembly Assortment](./Assembly_Assortment.md) | Reverse calculation (add, sub, XOR), `.rodata` string extraction | Hardcoded password cracking, XOR obfuscation, binary reversing |
+| 10 | [The Stack — Part 2](./The_Stack_Part2.md) | Caller frames, envp layout, stack alignment via env vars | Stack reading, canary bypass intuition, GDB vs shell addresses |
 
 ---
 
