@@ -71,3 +71,13 @@ Sources get cited inside notes when it matters.
 Practice → Break → Learn → Fix → Document → Repeat
 
 Deep understanding > memorizing everything (and forgetting it tomorrow)
+
+---
+
+> ## Note
+
+Most of the material in these notes currently comes from my learning on pwn.college. As I continue studying and gaining experience from other sources, I will expand and improve these notes over time.
+
+Right now, some sections may contain a lot of information because I am still learning and documenting concepts as I encounter them. My goal is to turn this repository into a personal learning hub that reflects not only what I learn, but also how I understand and apply it.
+
+As my knowledge grows, I plan to simplify and organize these notes further. I am good at breaking down complex topics into simpler ideas once I have developed a deeper understanding of them. That process takes time, but these notes will continue to evolve alongside my learning journey.
