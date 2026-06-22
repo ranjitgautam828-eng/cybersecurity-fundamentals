@@ -147,7 +147,14 @@ Characters are stored as their ASCII values — just numbers. `'H'` = `0x48`. Sa
 ## for reading exactly 
 
 To see what kinfd of byte are coming and you are working with:
+Some problem i faced in this problem:
+From my perspective, the problem was two-fold:
 
+1. Linking mistake – I used ld -shared which produces a .so shared library, not an executable. The checker explicitly said it expects an ELF executable, so switched to ld -o s s.o (no -shared). That fixed the file type.
+
+2. Syscall setup – The checker also complained that I didn’t invoke read (set rax to 0). I had used xor eax, eax to zero rax, but maybe the checker scans for the exact immediate value 0 in the instruction. When I changed it to mov eax, 0, the checker accepted it. So the insight is: sometimes the checker is literal about the instruction pattern, not just the effect.
+
+After those two fixes, the code worked and passed the check.
 code:
 
 ```
