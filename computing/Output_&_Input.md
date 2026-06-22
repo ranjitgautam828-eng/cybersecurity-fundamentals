@@ -328,6 +328,75 @@ gdb ./p
 
 ---
 
+## RIP-Relative string
+
+What we did
+We wrote a position‑independent x86‑64 program that:
+
+Stores the filename "/flag" using .asciz after the code.
+
+Uses lea rdi, [rip+path] to get its runtime address.
+
+Calls open, read, write, and exit(42).
+
+What the problem was
+The binary produced by as and ld was perfectly correct and would run fine. However, the /challenge/check tool does more than just run the binary—it also parses your assembly source code to check if you used the right syntax and instructions.
+
+For the read syscall, you need rax = 0. We initially used:
+
+xor eax, eax (common x86 idiom)
+
+then mov eax, 0 (32‑bit move)
+
+Both are binary‑correct — writing to eax automatically zeroes the upper 32 bits of rax, so rax ends up as 0.
+
+But the checker’s static analysis looks for the explicit occurrence of rax in that instruction, probably using a simple pattern match. Because xor eax, eax and mov eax, 0 only mention eax, the checker didn’t recognise that we were setting rax to 0, and it gave the misleading error: “You need to set rax to 0, the syscall number for read!”
+
+How we fixed it
+We changed the line to:
+
+asm
+mov rax, 0
+Now the source code literally says rax and 0 on the same line. The machine code is still identical in behaviour (it moves 0 into the full 64‑bit register), but the source text now matches what the checker expects to see, so the validation passes.
+
+In short: the fix was purely cosmetic to satisfy the checker’s source‑code linter, not to fix broken machine logic—the logic was always correct.
+
+code:
+```
+.intel_syntax noprefix
+.global _start
+.text
+
+_start:
+    lea rdi, [rip+path]
+    xor esi, esi
+    xor edx, edx
+    mov eax, 2
+    syscall
+
+    mov rdi, rax
+    sub rsp, 1024
+    mov rsi, rsp
+    mov edx, 1024
+    mov rax, 0          # explicit 64‑bit zero for read
+    syscall
+
+    mov rdx, rax
+    mov rdi, 1
+    mov rsi, rsp
+    mov eax, 1
+    syscall
+
+    mov rdi, 42
+    mov eax, 60
+    syscall
+
+path:
+    .asciz "/flag"
+```
+
+---
+
 ## 🔐 Security Context
 
 **This is literally shellcode.** The open→read→write pattern is exactly what shellcode does to read `/etc/shadow`, `/flag`, or any sensitive file. You just built it from scratch in assembly. That's not an exercise — that's the real thing.
