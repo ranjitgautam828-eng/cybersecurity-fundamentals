@@ -2,6 +2,29 @@
 
 After learning about control flow, I moved into understanding **endianness**, memory layouts, and how programs store data.
 
+## Sign Extention
+### The Challenge:
+The tricky part wasn’t just loading a byte—it was handling negative numbers correctly. I realized that if I just loaded 0xff (which is -1 as a signed byte) and padded it with zeroes, I’d incorrectly get 255 instead of -1. The real challenge was making sure the sign bit (the leftmost bit) gets copied into all the new high bits when expanding to 64 bits.
+
+### The Problem:
+Given a pointer to a single byte in rdi, I needed to read that byte, treat it as a signed 8‑bit value, and return its fully sign‑extended 64‑bit equivalent in rax.
+
+### How We Solved It:
+We skipped the manual bit-twiddling and used the CPU’s built‑in movsx (Move with Sign‑eXtend) instruction. It takes one byte from [rdi], looks at its sign bit, and automatically fills the rest of rax with either all 0s (for positive) or all 1s (for negative). One instruction did exactly what we needed. We just wrapped it in a function with .global solve so the grader could call it, and returned with ret.
+
+code:
+```
+.intel_syntax noprefix
+.global solve
+.section .text
+
+solve:
+    movsx rax, BYTE PTR [rdi]
+    ret
+```
+
+--- 
+
 ## Little Endian
 
 Most modern CPUs use **Little Endian (LE)** format.
