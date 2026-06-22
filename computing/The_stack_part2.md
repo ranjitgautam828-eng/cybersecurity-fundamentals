@@ -87,6 +87,160 @@ ld -shared -o solve.so solve.o
 
 ---
 
+## Loading stale stack data
+
+When I first wrote solve.s, I used the example offset from the challenge description:
+
+assembly
+mov rax, qword ptr [rsp-0x40]
+I assembled it, linked it into a shared library, and ran the checker:
+
+bash
+as -o solve.o solve.s
+ld -shared -o solve.so solve.o
+/challenge/check solve.so
+The checker ran my solve function, and it gave me this output:
+
+text
+[harness] load_secret returns 0, but leaves an 8-byte stale value at [rsp-0x10] from solve's view
+[harness] your solve returned 0x71d3cf182000, but the stale value was 0xfbada1ce8ff8a169
+That told me exactly what the problem was: I was reading from [rsp-0x40], but the stale secret was actually sitting at [rsp-0x10]. The offset printed by the checker is the real one, not the hypothetical example.
+
+So I opened solve.s again and changed the memory reference to match what the checker told me:
+
+assembly
+mov rax, [rsp - 0x10]
+Then I reassembled, relinked, and ran the checker once more. This time it loaded the correct value and passed the test.
+
+The key lesson: never guess the offset—the checker prints the exact offset you need, and you have to use that specific value in your code.
+
+code:
+```
+.intel_syntax noprefix
+.text
+.globl solve
+
+solve:
+    call rdi
+    mov rax, [rsp - 0x10]
+    ret
+```
+
+---
+
+## Stealing stale stack data
+The Challenge
+The goal was to call a read_flag function passed via rdi, which leaves the flag in its own stack frame. After it returns, that frame exists at a negative offset relative to the current rsp. I had to compute the address of that stale buffer (not the value) and pass it to the write syscall to print the flag to stdout.
+
+The Problems I Faced
+
+Assembly Syntax Mismatch: My first attempts used AT&T syntax (mov rax, qword ptr), but the assembler kept throwing operand type mismatch errors. I realized the environment expected Intel syntax, so I switched to .intel_syntax noprefix.
+
+Missing the Exact Offset: I initially used a placeholder offset (-0x40) from the problem description without realizing the checker prints the exact offset dynamically. When I ran the checker, it explicitly told me the buffer sits at [rsp-0x88] from solve's view. My code was looking in the wrong place, so it printed nothing or garbage.
+
+Figuring Out the Length: The flag is null-terminated. I needed to scan for the \0 byte to know how many bytes to write. I had to carefully set up rcx = -1, al = 0, and use repne scasb to count the length correctly.
+
+How I Solved It
+
+Fixed the Syntax: I rewrote the entire function in Intel syntax, using lea rsi, [rsp - 0x88] to get the address of the stale data.
+
+Read the Checker Output Carefully: Instead of guessing, I ran /challenge/check solve.so and read the line: [harness] ... leaves a 128-byte stale flag buffer at [rsp-0x88] from solve's view. I then updated the offset to 0x88.
+
+Implemented the Scanning Logic: I set rdi to the start of the buffer, scanned forward until the null byte, computed the length using not rcx and dec rcx, and finally set up the syscall (rax=1, rdi=1, rsi=address, rdx=length).
+
+After rebuilding with the corrected offset, the code successfully printed the flag. The key takeaway was that the environment gives you the exact offset in its output—you just need to read it and hardcode it into your assembly.
+code:
+```
+.intel_syntax noprefix
+.globl solve
+
+solve:
+    call rdi                     # call read_flag
+    lea rsi, [rsp - 0x88]        # address of stale flag bytes (0x88 from checker)
+    mov rdi, rsi                 # rdi = start of flag for scanning
+    mov rcx, -1
+    xor al, al
+    cld
+    repne scasb
+    not rcx
+    dec rcx                      # rcx = length (excluding null)
+    mov rdx, rcx                 # length
+    mov rdi, 1                   # stdout
+    mov rax, 1                   # sys_write
+    syscall
+    ret
+```
+---
+
+Reserving your own frame:
+The Goal
+Write an x86‑64 function solve that:
+
+Reserves a 256‑byte scratch area on the stack.
+
+Writes zero to every single byte of that area (the grader fills it with garbage beforehand).
+
+Restores the stack pointer and returns cleanly—without crashing.
+
+The Problems I Faced
+1. The "stale data" trap
+I knew registers hold values, but stack memory doesn’t automatically reset itself. The challenge explicitly warned: failure to initialize stack data is a common vulnerability. When I first allocated the frame with sub rsp, 256, I assumed the memory would be empty. But the grader fills it with nonzero bytes before calling my function. If I didn’t explicitly zero it, the grader would detect the leftover junk.
+
+2. Forgetting to restore RSP
+The first version I wrote zeroed the frame but I accidentally forgot to add 256 back to rsp before ret. The ret instruction pops the return address from [rsp]. With rsp still pointing 256 bytes lower, it tried to jump to garbage data—my program crashed immediately. I had to remind myself: sub and add must be perfectly balanced.
+
+3. Syntax confusion (AT&T vs. Intel)
+I originally wrote the solution in AT&T syntax (mov %rsp, %rdi, etc.). But when I submitted it, I realized the course uses Intel syntax (.intel_syntax noprefix). I had to rewrite the instructions without the % prefixes and in the op dest, src order (Intel style). This tripped me up because I had to mentally flip the operands for mov and stosb.
+
+4. Picking the right zeroing method
+I could have used a loop with cmp and jne, but that would be verbose and slow. I knew about rep stosb, but I had to make sure I set all four required registers correctly:
+
+rdi → starting address (the new rsp).
+
+rcx → count (256 bytes).
+
+al → zero value.
+
+cld wasn’t strictly necessary (since the direction flag is usually clear), but I included it to be safe.
+
+How I Solved It
+Step 1 – Allocate
+I subtracted 256 from rsp to move the stack pointer left.
+
+Step 2 – Prepare for rep stosb
+
+Copied the current rsp into rdi (destination).
+
+Loaded 256 into rcx (byte counter).
+
+Zeroed eax so al = 0.
+
+Step 3 – Execute and restore
+
+Ran rep stosb, which writes al to [rdi], increments rdi, and decrements rcx until rcx = 0. This filled all 256 bytes with zero.
+
+Added 256 back to rsp to restore the exact original state.
+
+Called ret—now the return address was correctly at the top of the stack.
+
+code:
+```
+.intel_syntax noprefix
+.text
+.globl solve
+.type solve, @function
+solve:
+    sub rsp, 256               # allocate 256 bytes
+    mov rdi, rsp               # destination = start of frame
+    mov rcx, 256               # count = 256 bytes
+    xor eax, eax               # value to write = 0
+    rep stosb                  # write zero byte by byte
+    add rsp, 256               # deallocate frame
+    ret
+```
+
+---
+
 Building your own frame
 Using the Stack for Extra Space
 The main point:
