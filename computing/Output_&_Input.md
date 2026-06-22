@@ -144,6 +144,32 @@ Characters are stored as their ASCII values — just numbers. `'H'` = `0x48`. Sa
 
 ---
 
+## for reading exactly 
+
+To see what kinfd of byte are coming and you are working with:
+
+code:
+
+```
+.intel_syntax noprefix
+.global _start
+_start:
+    sub rsp, 128
+    mov rsi, rsp
+    xor edi, edi
+    mov edx, 128
+    mov eax, 0
+    syscall
+    mov rdx, rax
+    mov edi, 1
+    mov eax, 1
+    syscall
+    mov edi, 42
+    mov eax, 60
+    syscall
+```
+---
+
 ## Opening a File — syscall 2
 
 stdin/stdout/stderr are always open. To read a file from disk, we have to open it first.
