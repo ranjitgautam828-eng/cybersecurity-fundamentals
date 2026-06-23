@@ -1,4 +1,4 @@
-# pwn.college — Assembly Language: Building a Web Server
+# Building a Web Server
 
 A progression of x86-64 Linux assembly programs built as part of the pwn.college computing module. Each section builds on the previous, culminating in a full concurrent HTTP server handling GET and POST requests.
 
