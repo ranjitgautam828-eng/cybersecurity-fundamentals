@@ -92,3 +92,9 @@ String:  "42"
 
 ASCII subtraction: `'4'` = 52, `52 - 48 = 4` ✓
 
+lost a whole lot of data here when solving probleM:
+
+printf
+
+## Decimal Marker:
+code:
