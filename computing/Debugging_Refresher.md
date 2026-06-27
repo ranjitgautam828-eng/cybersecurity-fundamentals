@@ -207,3 +207,7 @@ Since the breakpoint script issues continue, the program runs through all 64 ite
 
 The Takeaway
 The core lesson is forcing the program’s state at the exact decision point. By analyzing the disassembly, finding the compare instruction, and using GDB’s set command to control registers, I bypassed the randomized checks. The self‑debugging binary (execve trick) forced me to think about where my script is sourced—turning .gdbinit into the key to full automation.
+
+---
+
+## Modifying execution
