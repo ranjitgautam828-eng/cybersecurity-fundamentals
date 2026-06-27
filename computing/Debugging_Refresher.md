@@ -133,3 +133,77 @@ Interacting with program input while debugging
 ---
 
 ## GDB Scripting
+soled this challenge by directitly running the progrsam and giving command insifede the program itself.
+
+---
+
+## Modifying Data
+The Challenge
+The goal was to write a fully autonomous GDB script for embryogdb_level6—no manual typing, no copy‑pasting answers. The program was designed to be stubborn:
+
+It generated a random value.
+
+It looped 64 times, each iteration reading a number from a file and another number from stdin, then comparing them.
+
+If any comparison failed, it called exit(1).
+
+It also contained an intentional int3 instruction, which sends a SIGTRAP and kills the process if not handled.
+
+Worst of all, when you run the binary directly, it spawns its own GDB instance via execve. That meant I couldn’t just use gdb -x script — I had to force‑feed the script to the spawned debugger.
+
+The Roadblocks
+1. The int3 trap
+Right at main+573, there’s an int3. Without special handling, GDB passes this signal to the program, which dies immediately. I had to tell GDB to completely ignore it.
+
+2. The binary execs GDB itself
+Running /challenge/embryogdb_level6 doesn’t just run the program—it starts a new GDB session. So writing a script and passing it via -x to the outer GDB didn’t work; the outer GDB lost control after the exec. The only reliable way was to put my commands in ~/.gdbinit so the inner GDB (the one the binary spawns) would auto‑source them.
+
+3. Timing: breakpoints before the binary loads
+My first .gdbinit tried to set break *main+757 right away. GDB complained:
+No symbol table is loaded. Use the "file" command.
+The binary wasn’t loaded yet when the init file executed. I fixed this by adding an explicit file /challenge/embryogdb_level6 at the top of the script.
+
+4. The never‑ending loop
+Even with a breakpoint set, the script needed to override the comparison 64 times—without me typing continue over and over. Using commands with silent and continue inside made it fully automatic.
+
+The Final Working Solution
+Here’s the .gdbinit that did the job:
+
+gdb
+# 1. Kill all interactive prompts
+set pagination off
+set confirm off
+
+# 2. Ignore the intentional int3 (SIGTRAP) – do NOT pass it to the program
+handle SIGTRAP nostop noprint nopass
+
+# 3. Explicitly load the binary before setting breakpoints
+file /challenge/embryogdb_level6
+
+# 4. Break right before the comparison (main+757), after both values are read
+break *main+757
+commands
+  silent
+  # 5. Force both compared registers to 0 → equality always succeeds
+  set $rax = 0
+  set $rdx = 0
+  continue
+end
+
+# 6. Start the program with /dev/null as stdin – scanf gets EOF,
+#    but we override the variable at the breakpoint anyway.
+run < /dev/null
+continue
+Why It Works
+The file command ensures GDB knows the addresses before we set the breakpoint.
+
+handle SIGTRAP nostop noprint nopass prevents the int3 from crashing the process.
+
+The breakpoint at main+757 hits exactly at the cmp %rax, %rdx instruction, right after reading from the file and scanf.
+
+At that moment, I overwrite both registers to 0, so the comparison always passes—regardless of the actual random values.
+
+Since the breakpoint script issues continue, the program runs through all 64 iterations without any manual intervention, eventually calling win() and printing the flag.
+
+The Takeaway
+The core lesson is forcing the program’s state at the exact decision point. By analyzing the disassembly, finding the compare instruction, and using GDB’s set command to control registers, I bypassed the randomized checks. The self‑debugging binary (execve trick) forced me to think about where my script is sourced—turning .gdbinit into the key to full automation.
