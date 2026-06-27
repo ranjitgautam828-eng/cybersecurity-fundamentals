@@ -211,3 +211,39 @@ The core lesson is forcing the program’s state at the exact decision point. By
 ---
 
 ## Modifying execution
+My Summary: embryogdb_level7
+The Challenge
+The task was to use GDB’s full control over a running process to call a function named win() inside the target program (/challenge/embryogdb_level7). The challenge description explicitly told me that I could run call (void)win() to solve it, demonstrating GDB’s ability to execute arbitrary functions in the debugged process.
+
+The Problem I Faced
+I launched the program under GDB by running /challenge/embryogdb_level7, which automatically dropped me into a GDB session. My first instinct was to just type run. The program started, printed its welcome message, and then exited almost immediately with:
+
+text
+[Inferior 1 (process 136) exited with code 052]
+When I then tried to execute call (void)win(), GDB replied:
+
+text
+You can't do that without a process to debug.
+I had missed the key point: you can only call a function while the process is still alive. Since the program had already terminated, there was no running process context for GDB to execute the function in.
+
+How I Solved It
+I realised I needed to stop the program before it could exit, so that the process remained active while I called win(). I did this by:
+
+Setting a breakpoint at main so the program would pause right at the start:
+
+text
+(gdb) break main
+Starting the program again with run – it hit the breakpoint and stopped, keeping the process alive.
+
+Now, with the process paused at main, I successfully executed:
+
+text
+(gdb) call (void)win()
+This time it worked – the function ran, and I got the flag.
+
+Key Takeaway
+The process must be in a running (or paused) state for GDB to inject and execute function calls. If the program exits, there’s nothing left to debug. Setting a breakpoint early (e.g., at main) gives me the opportunity to interact with the process before it finishes, which is the fundamental trick that solved this level.
+
+---
+
+## Broken Function
