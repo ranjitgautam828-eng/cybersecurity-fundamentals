@@ -1,1 +1,121 @@
+Dealing with Data
+
+Newline Troubles: A Linux Input Challenge
+In this series of challenges, I learned how to send input to programs without including a trailing newline (\n). Many programs compare exact byte strings, and a newline from pressing Enter can cause mismatches. Here's what I discovered.
+
+The Core Problem
+When you type input and press Enter, the terminal sends a newline character (\n or 0x0A) along with your text. Programs that read input via sys.stdin.read1() or open(...).read() will see that newline. In these challenges, the correct password had no newline, so any input containing \n was rejected.
+
+Challenge 1: Reading from Standard Input (stdin)
+Code snippet:
+
+python
+entered_password = sys.stdin.buffer.read1()
+correct_password = b"wptikkqn"
+if b"\n" in entered_password: 
+    # reject
+Solution: Use echo -n or printf to suppress the trailing newline.
+
+bash
+echo -n "wptikkqn" | /challenge/runme
+# or
+printf "wptikkqn" | /challenge/runme
+Key takeaway: echo normally adds a newline; -n disables it. printf never adds a newline by default.
+
+Challenge 2: Reading from a Hardcoded File
+Code snippet:
+
+python
+entered_password = open("lpoz", "rb").read()
+correct_password = b"joqhiapd"
+This version reads from a file named "lpoz" – not from stdin.
+
+Solution: Create the file with the password (without a newline) and run the program.
+
+bash
+echo -n "joqhiapd" > lpoz
+/challenge/runme
+Alternative: Use printf or even cat with Ctrl+D to terminate without Enter.
+
+Challenge 3: Reading from a Command-Line Argument
+Code snippet:
+
+python
+entered_password = open(sys.argv[1], "rb").read()
+correct_password = b"ekavbpxd"
+The filename is taken from the first argument.
+
+Solution: Create a file with the password and pass its name as an argument.
+
+bash
+echo -n "ekavbpxd" > password.txt
+/challenge/runme password.txt
+You can name the file anything; just ensure no newline inside.
+
+Challenge 4: Hex Encoding Conversion
+Code snippet:
+
+python
+correct_password = b"\xd6"
+entered_password = bytes.fromhex(entered_password.decode("l1"))
+The program expects you to type the hexadecimal representation of the byte 0xD6, which is "d6". It reads your input as bytes, decodes to Latin‑1, and then converts from hex.
+
+Solution: Send the two characters d and 6 (no newline).
+
+bash
+echo -n "d6" | /challenge/runme
+If you send 214 (decimal) or press Enter, you'll get an error because "214" is not valid hex.
+
+Summary of Techniques
+Method	Command	Newline?
+echo without -n	echo "password"	✅ yes
+echo -n	echo -n "password"	❌ no
+printf	printf "password"	❌ no
+Here‑string (bash)	program <<< "password"	✅ yes (unless wrapped with echo -n)
+File redirection	echo -n "password" > file + program < file	❌ no (if file created with -n)
+cat + Ctrl+D	cat > file → type → Ctrl+D	❌ no (if you don't press Enter)
+Lesson Learned
+Always think about what the program is reading and how it compares input. The read1() function (or read()) gives you raw bytes exactly as they are; they don't strip newlines. For challenges that expect exact byte sequences, you must avoid sending any extra characters – especially the newline.
+
+Bonus: When dealing with hex-encoded passwords, provide only the hex digits (e.g., "d6") – not the \x notation, and never press Enter.
+
+Repository Note
+All solutions above assume the program is located at /challenge/runme. You can adapt them to any similar binary that expects exact byte input without newlines. The key tools are echo -n and printf, combined with pipes or file redirection.
+
+Happy hacking! 🐧
+
+
+Solution Write‑up: “What’s the Password?”
+After reading the challenge, I examined the Python program /challenge/runme. The source code revealed:
+
+python
+correct_password = b"uzpcquax"
+entered_password = sys.stdin.buffer.read1().strip()
+
+if entered_password == correct_password:
+    print(open("/flag").read().strip())
+The password was plainly visible: uzpcquax. However, I noticed that read1() (called without an argument) reads a chunk of input (up to the buffer size), not just a single byte. The .strip() call would remove any leading/trailing whitespace, including a newline.
+
+The catch: if I simply piped the password with a newline (e.g., echo "uzpcquax"), the newline would be stripped, but the password itself would still be read correctly. Actually, I realised that read1() would read the whole string because it’s small enough to fit in the buffer. So the only requirement was to provide the exact bytes uzpcquax without any extra whitespace that .strip() might remove incorrectly? Wait, .strip() removes whitespace from both ends, so a newline is fine – it gets stripped. So even echo "uzpcquax" should work.
+
+But to be safe and follow the hints, I used printf to avoid adding a newline altogether:
+
+bash
+printf "uzpcquax" | /challenge/runme
+Alternatively, I could have created a file without a newline and redirected it:
+
+bash
+printf "uzpcquax" > pass.txt
+/challenge/runme < pass.txt
+Both approaches worked. The program read the entire password, compared it successfully, and printed the flag.
+
+Key Takeaways
+Reading source code is the first step in security analysis – the password was hard‑coded.
+
+Understanding input handling matters: read1() reads a chunk, not just one byte; .strip() removes whitespace.
+
+Providing clean input (without unwanted newlines) can be done with printf or echo -n.
+
+This was a gentle introduction to reversing and interacting with a simple binary. The flag was successfully retrieved.
+
 
