@@ -118,4 +118,60 @@ Providing clean input (without unwanted newlines) can be done with printf or ech
 
 This was a gentle introduction to reversing and interacting with a simple binary. The flag was successfully retrieved.
 
+Decoding Challenges (Hex & Bits)
+Overview
+I worked through two SUID‑enabled Python scripts that required sending a password in a specific binary encoding. The scripts would decode the expected password (either from hex or from a bitstring) and compare it with the raw bytes I piped in. My goal was to send the password in its raw byte form, not as a printable string.
+
+Challenge 1: Decoding Hex
+The script (/challenge/runme) read my input as raw bytes, then decoded the hardcoded hex string "c994be86fdbfc5a5" into bytes (using bytes.fromhex). If my input matched those bytes, I got the flag.
+
+My first attempt (wrong):
+
+bash
+printf "c994be86fdbfc5a5" | /challenge/runme
+This sent 16 ASCII characters (the hex digits). The script read 16 bytes and said “Incorrect!”.
+
+The fix – send the actual binary bytes using hex escapes:
+
+bash
+printf "\xc9\x94\xbe\x86\xfd\xbf\xc5\xa5" | /challenge/runme
+Now the script read exactly 8 bytes, matched the decoded password, and printed the flag.
+
+Challenge 2: Decoding Bits
+The second script was similar, but the password was given as a 64‑bit binary string:
+1001000010101111111001001000110010100100111110111110010010001011
+
+The script defined a decode_from_bits() function that converted this bitstring to bytes, then compared.
+
+Wrong attempt (sent the ASCII '1' and '0' characters):
+
+bash
+printf "1001000010101111111001001000110010100100111110111110010010001011" | /challenge/runme
+This sent 64 bytes (the characters), so the comparison failed.
+
+Another wrong attempt – sent the hex representation as ASCII:
+
+bash
+printf "90AFE48CA4FBE48B" | /challenge/runme
+Still sent 16 ASCII hex digits.
+
+Correct solution – group the bits into bytes and send the raw bytes with printf:
+
+bash
+printf "\x90\xaf\xe4\x8c\xa4\xfb\xe4\x8b" | /challenge/runme
+This emitted exactly 8 bytes, matching the decoded password, and the flag was revealed.
+
+Key Takeaways
+Know your encoding: When a program expects raw bytes, you must supply them directly, not as a human‑readable representation.
+
+Use printf with \xNN escapes to embed arbitrary bytes in a shell command.
+
+Piping (|) sends the output as standard input to the target program.
+
+SUID scripts can read the flag file; we don’t need to be root.
+
+Both challenges illustrate the importance of understanding how data is represented and transformed in memory versus in transit.
+
+
+
 
